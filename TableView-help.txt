@@ -1,0 +1,11 @@
+Create the Model
+    Creat a QStandardItemModel, pass dimensions to constructor
+    Usefull methods
+        setItem()
+        insertRow()
+        insertColumn
+        removeRow()
+        removeColumn()
+        clear()
+Create the view and the model goes in the method call argument.
+    setModel()

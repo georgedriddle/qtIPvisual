@@ -1,34 +1,60 @@
 from ipaddress import ip_network
 
+def makeEmptygrid(cCount: int, rCount:int) -> list[list]:
+
+    table = []
+    for r in range(rCount):
+        rowdata = []
+        for c in range(cCount):
+            rowdata.append({})
+        table.append(rowdata)
+    return table
+
 
 def buildDisplayList(cidr: ip_network, startPrefix: int, endPrefix: int):
-            ''' Returns a list of list, each being a subnet column '''
-            e = []
-            columnCount = 2 ** (endPrefix - startPrefix)
-            print(f'should be {columnCount} columns')
-            for prefix in list(range(startPrefix, endPrefix + 1)):
-                # Begin making row data.
-                e1 = []
-                if prefix > cidr.prefixlen:
-                    sbnet = list(cidr.subnets(new_prefix=prefix))
-                    e1.extend(sbnet)
+    ''' Returns a list of list, each being a subnet column '''
+    columnCount =  endPrefix - startPrefix + 1
+    rowCount = 2 ** (endPrefix - startPrefix)
+    data = makeEmptygrid(columnCount,rowCount)
+    colNum = 0
+    for prefix in list(range(startPrefix, endPrefix + 1)):
+        # Begin making row data.
+        if prefix >= cidr.prefixlen:
+            sbnet = list(cidr.subnets(new_prefix=prefix))
+            rowNum = 0
+            for net in sbnet:
+                data[rowNum][colNum] = {'network': net.with_prefixlen,
+                                        'spansize': 2 ** (endPrefix - prefix)}
+                rowNum += 2 ** (endPrefix - prefix)
+        elif prefix < cidr.prefixlen:
+            rowNum = 0
+            sbnet = cidr.supernet(new_prefix=prefix)
+            for net in sbnet:
+                network = ip_network(net)
+                data[rowNum][colNum] = {'network': network.with_prefixlen,
+                                        'spansize': 2 ** (endPrefix - prefix)}
+                rowNum += 2 ** (endPrefix - prefix)
         
-                elif prefix == cidr.prefixlen:
-                    e1.extend([ip_network(cidr.with_prefixlen)])
-        
-                elif prefix < cidr.prefixlen:
-                    e1.extend([cidr.supernet(new_prefix=prefix)])
-                # End of Row Data
-        
-                newrow = ([{'cidr': x.with_prefixlen} for x in e1])
-                e.append(newrow)
-            return e
-            # Need to add in a list comprehension to prepend each row to row  count
-            #[l1.insert(0,"x") for n in range(32-1)]
+        colNum += 1
+    return data
 
-network = ip_network("192.168.1.0/24")
-start = 24
-end = 32
-data = buildDisplayList(network, start, end)
-for row in data:
-    print(row)
+
+if __name__ == '__main__':
+    network = ip_network("192.168.1.0/24")
+    start = 24
+    end = 27
+    networks = buildDisplayList(network, start, end)
+    for item in networks:
+        print(item)
+    columnCount =  end - start + 1
+    rowCount = 2 ** (end - start)
+    for currentrow in range(0,rowCount):
+        for currentcol in range(0,columnCount):
+            if networks[currentrow][currentcol]:
+                print(networks[currentrow][currentcol])
+            else:
+                print('!')
+
+    print('!' * 80)
+
+
