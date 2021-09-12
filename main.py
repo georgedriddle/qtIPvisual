@@ -1,96 +1,82 @@
-from PyQt6.QtCore import Qt, QRegularExpression
-from PyQt6.QtGui import (QIntValidator, QRegularExpressionValidator, QColor,
-                         QPalette)
-from PyQt6.QtWidgets import (QApplication, QLineEdit, QMainWindow, QGridLayout,
-                             QPushButton, QScrollBar, QVBoxLayout,  QWidget, QLabel,
-                             QScrollArea, QHBoxLayout)
+from ipaddress import ip_network
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import Qt
+import databuilder
 
-from ipaddress import ip_address as ipa
-
-class Color(QWidget):
-    def __init__(self, color):
+class TableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data):
         super().__init__()
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Window, QColor(color))
-        self.setPalette(palette)
+        self._data = data
 
-class MainWindow(QMainWindow):
+    def data(self, index, role):
+        if role == Qt.ItemDataRole.DisplayRole:
+            return self._data[index.row()][index.column()].get('network')
+
+    def rowCount(self, index):
+        return len(self._data)
+
+    def columnCount(self, index):
+        return len(self._data[0])
+
+
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("IP VISUAL")
- 
-        
-        toplayout = QVBoxLayout()
-        headerlayout = QGridLayout()
-        datalayout = QGridLayout()
-        
-        dataContainer = QWidget()
 
-        zero32 = QIntValidator(0, 32)
-        matchcidr = QRegularExpression(r'^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$')
-        V = QRegularExpressionValidator(QRegularExpression(matchcidr))
-        
-        sourceNetwork_lbl = QLabel()
-        sourceNetwork_lbl.setText("Network")
-        headerlayout.addWidget(sourceNetwork_lbl, 0, 0)
-        
-        start_lbl = QLabel("start")
-        headerlayout.addWidget(start_lbl, 0, 1)
-        
-        sourceNetwork = QLineEdit()
-        sourceNetwork.setMinimumSize(115,20)
-        sourceNetwork.setValidator(V)
-        
-        sourceNetwork.editingFinished.connect(self.cidrOK)
-        headerlayout.addWidget(sourceNetwork, 1, 0)
+        self.setWindowTitle("IP-Visualizer")
+        self.setGeometry(100, 100, 400, 400)
 
-        start = QLineEdit()
-        start.setMaxLength(2)
-        start.setValidator(zero32)
-        start.setMaximumSize(30, 20)
-        start.editingFinished.connect(self.startOK)
-        headerlayout.addWidget(start, 1, 1)
-        
-        end_lbl = QLabel("end")
-        headerlayout.addWidget(end_lbl, 0, 2)
+        widget = QtWidgets.QWidget()
+        self.table = QtWidgets.QTableView()
+        self.labelNetwork = QtWidgets.QLabel("Network to Visualze as CIDR")
+        self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
+        self.displayNetwork.setMaxLength(18)
+        self.displayNetwork.setMaximumWidth(125)
+        self.labelStart = QtWidgets.QLabel("Start")
+        self.displayStart = QtWidgets.QLineEdit("24")
+        self.displayStart.setMaxLength(2)
+        self.displayStart.setMaximumWidth(25)
+        self.labelEnd = QtWidgets.QLabel("end")
+        self.displayEnd = QtWidgets.QLineEdit("26")
+        self.displayEnd.setMaximumWidth(25)
+        self.displayEnd.setMaxLength(2)
 
-        end = QLineEdit()
-        end.setMaxLength(2)
-        end.setValidator(zero32)
-        end.setMaximumSize(30,20)
-        headerlayout.addWidget(end, 1, 2)
-        toplayout.addLayout(headerlayout)
-
-        generate = QPushButton("Generate")
-        headerlayout.addWidget(generate, 1, 3)
-
-        baseIP = ipa("192.168.0.0")
+        self.btnGenerate = QtWidgets.QPushButton('Generate')
+        self.btnGenerate.setMaximumWidth(100)
+        self.btnGenerate.clicked.connect(self.generate)
         
-        for x in range(0,32):
-            z = QLabel(f"{baseIP + x}/128")
-            datalayout.addWidget(z)
-        toplayout.addLayout(datalayout)
-                       
-        widget = QWidget()
-        widget.setGeometry(0, 0, 800, 600)
-        widget.setMaximumSize(800, 600)
-        
-        
-        widget.setLayout(toplayout)
-        scroller = QScrollArea()
-        scroller.setWidget(widget)
         self.setCentralWidget(widget)
+        self.setGeometry(600, 100, 400, 200)
+    
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.labelNetwork)
+        layout.addWidget(self.displayNetwork)
+        layout.addWidget(self.labelStart)
+        layout.addWidget(self.displayStart)
+        layout.addWidget(self.labelEnd)
+        layout.addWidget(self.displayEnd)
+        layout.addWidget(self.btnGenerate)
+        layout.addWidget(self.table)
+        widget.setLayout(layout)
+    
+    def generate(self):
+        start = int(self.displayStart.text())
+        end = int(self.displayEnd.text())
+        net = ip_network(self.displayNetwork.text())
+        net = databuilder.checkCidr(net, start)
+        columnCount =  end - start + 1
+        rowCount = 2 ** (end - net.prefixlen)
+        self.data = databuilder.buildDisplayList(net, start, end)
+        model = TableModel(self.data)
+        self.table.setModel(model)
+        for currentrow in range(0,rowCount):
+            for currentcol in range(0,columnCount):
+                if self.data[currentrow][currentcol].get('network'):
+                    span = self.data[currentrow][currentcol].get('spansize')
+                    if span > 1:
+                        self.table.setSpan(currentrow, currentcol, span, 1)
 
-    def cidrOK(self):
-        print("network input is good")
-    
-    def startOK(self):
-        print("start is good!")
-    
-app = QApplication([])
+app = QtWidgets.QApplication([])
 window = MainWindow()
 window.show()
 app.exec()
-
-
