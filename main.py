@@ -1,6 +1,6 @@
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import QSize, QWaitCondition, Qt
+from PyQt6.QtCore import Qt
 import databuilder
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -31,7 +31,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.labelNetwork = QtWidgets.QLabel("Network to Visualze as CIDR")
         self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
         self.displayNetwork.setMaxLength(18)
-        size0 = QSize(10,10)
         self.displayNetwork.setMaximumWidth(125)
         self.labelStart = QtWidgets.QLabel("Start")
         self.displayStart = QtWidgets.QLineEdit("24")
