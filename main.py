@@ -18,7 +18,7 @@ class TableModel(QtCore.QAbstractTableModel):
     def columnCount(self, index):
         return len(self._data[0])
 
-
+    
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -28,7 +28,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         widget = QtWidgets.QWidget()
         self.table = QtWidgets.QTableView()
-        self.labelNetwork = QtWidgets.QLabel("Network to Visualze as CIDR")
+        self.table.clicked.connect(self.showSelection)
+        self.labelNetwork = QtWidgets.QLabel("Network to Visualze")
         self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
         self.displayNetwork.setMaxLength(18)
         self.displayNetwork.setMaximumWidth(125)
@@ -47,28 +48,57 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.setCentralWidget(widget)
         self.setGeometry(600, 100, 400, 200)
-    
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.labelNetwork)
-        layout.addWidget(self.displayNetwork)
-        layout.addWidget(self.labelStart)
-        layout.addWidget(self.displayStart)
-        layout.addWidget(self.labelEnd)
-        layout.addWidget(self.displayEnd)
-        layout.addWidget(self.btnGenerate)
-        layout.addWidget(self.table)
+        
+        fields = QtWidgets.QWidget()
+        fields.setMaximumWidth(400)
+        self.detailSite = QtWidgets.QLineEdit()
+        self.detailSite.setMaximumWidth(125)
+        self.detailName = QtWidgets.QLineEdit()
+        self.detailName.setMaximumWidth(400)
+        self.detailVrf = QtWidgets.QLineEdit()
+        self.detailVrf.setMaximumWidth(125)
+        self.detailEnterpriseSummary = QtWidgets.QCheckBox()
+        self.detailSiteSummary = QtWidgets.QCheckBox()
+
+        fieldlayout = QtWidgets.QFormLayout()
+        fieldlayout.addRow("Site", self.detailSite)
+        fieldlayout.addRow("Name", self.detailName) 
+        fieldlayout.addRow("VRF", self.detailVrf)
+        fieldlayout.addRow("Ent. Summ", self.detailEnterpriseSummary)
+        fieldlayout.addRow("Site Summ", self.detailSiteSummary) 
+        fields.setLayout(fieldlayout)
+
+        layout = QtWidgets.QGridLayout()
+        layout.addWidget(self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.labelStart,0,1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.labelEnd, 0, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.btnGenerate, 2, 0)
+        layout.addWidget(self.table, 3, 4)
+        layout.addWidget(fields,3,0)
         widget.setLayout(layout)
-    
+
+
+    def showSelection(self):
+        
+        z = self.table.selectedIndexes()[0]
+        print(f'z is {type(z)}')
+        print(f'row is {z.row()} and column is {z.column()}')
+        print(self.model.data(z, Qt.ItemDataRole.DisplayRole))
+
+
     def generate(self):
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
-        net = ip_network(self.displayNetwork.text())
+        net = ip_network(self.displayNetwork.text(),strict=False)
         net = databuilder.checkCidr(net, start)
         columnCount =  end - start + 1
         rowCount = 2 ** (end - net.prefixlen)
         self.data = databuilder.buildDisplayList(net, start, end)
-        model = TableModel(self.data)
-        self.table.setModel(model)
+        self.model = TableModel(self.data)
+        self.table.setModel(self.model)
         for currentrow in range(0,rowCount):
             for currentcol in range(0,columnCount):
                 if self.data[currentrow][currentcol].get('network'):
