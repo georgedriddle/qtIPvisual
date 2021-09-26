@@ -1,7 +1,9 @@
+import json
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt
 import databuilder
+import settings
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
@@ -26,6 +28,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("IP-Visualizer")
         self.setGeometry(100, 100, 400, 400)
 
+        self.saveData = {}
+        self.filebtn = QtWidgets.QPushButton("Open File")
+        self.filebtn.clicked.connect(self.getFile)
         widget = QtWidgets.QWidget()
         self.table = QtWidgets.QTableView()
         self.table.clicked.connect(self.showSelection)
@@ -50,22 +55,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setGeometry(600, 100, 400, 200)
         
         fields = QtWidgets.QWidget()
-        fields.setMaximumWidth(400)
-        self.detailSite = QtWidgets.QLineEdit()
-        self.detailSite.setMaximumWidth(125)
-        self.detailName = QtWidgets.QLineEdit()
-        self.detailName.setMaximumWidth(400)
-        self.detailVrf = QtWidgets.QLineEdit()
-        self.detailVrf.setMaximumWidth(125)
-        self.detailEnterpriseSummary = QtWidgets.QCheckBox()
-        self.detailSiteSummary = QtWidgets.QCheckBox()
-
+        fields.setMaximumWidth(300)
         fieldlayout = QtWidgets.QFormLayout()
-        fieldlayout.addRow("Site", self.detailSite)
-        fieldlayout.addRow("Name", self.detailName) 
-        fieldlayout.addRow("VRF", self.detailVrf)
-        fieldlayout.addRow("Ent. Summ", self.detailEnterpriseSummary)
-        fieldlayout.addRow("Site Summ", self.detailSiteSummary) 
+        for field in settings.detailFields:
+            fieldlayout.addRow(field['name'], QtWidgets.QLineEdit())
+        for field in settings.detailChecks:
+            fieldlayout.addRow(field['name'], QtWidgets.QCheckBox())
         fields.setLayout(fieldlayout)
 
         layout = QtWidgets.QGridLayout()
@@ -81,13 +76,20 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setLayout(layout)
 
 
-    def showSelection(self):
-        
-        z = self.table.selectedIndexes()[0]
-        print(f'z is {type(z)}')
-        print(f'row is {z.row()} and column is {z.column()}')
-        print(self.model.data(z, Qt.ItemDataRole.DisplayRole))
+    def getFile(self):
+        file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose data")
+        if file[0]:
+            with open(file[0], 'r') as F1:
+                z = json.load(F1)
+            self.saveData = z[0]
 
+    def showSelection(self):
+        z = self.table.selectedIndexes()[0]
+        print(f'row is {z.row()} and column is {z.column()}')
+        lookup = self.model.data(z, Qt.ItemDataRole.DisplayRole)
+        if self.saveData.get(lookup).get('name'):
+            text = self.saveData.get(lookup).get('name')
+            self.detailName.setText(text)
 
     def generate(self):
         start = int(self.displayStart.text())
@@ -99,6 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.data = databuilder.buildDisplayList(net, start, end)
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
+        self.table.clearSpans()
         for currentrow in range(0,rowCount):
             for currentcol in range(0,columnCount):
                 if self.data[currentrow][currentcol].get('network'):
