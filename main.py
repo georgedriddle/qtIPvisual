@@ -56,12 +56,26 @@ class MainWindow(QtWidgets.QMainWindow):
         
         fields = QtWidgets.QWidget()
         fields.setMaximumWidth(300)
+        self.records = []
+        self.checkboxes = []
         fieldlayout = QtWidgets.QFormLayout()
-        for field in settings.detailFields:
-            fieldlayout.addRow(field['name'], QtWidgets.QLineEdit())
-        for field in settings.detailChecks:
-            fieldlayout.addRow(field['name'], QtWidgets.QCheckBox())
         fields.setLayout(fieldlayout)
+        filebtn = QtWidgets.QPushButton('Open File')
+        filebtn.clicked.connect(self.getFile)
+        fieldlayout.addRow(filebtn)
+        for field in settings.detailFields:
+            z = QtWidgets.QLineEdit()
+            self.records.append(z)
+        for box in settings.detailChecks:
+            z = QtWidgets.QCheckBox()
+            self.checkboxes.append(z)
+
+        for number, control in enumerate(self.records):
+
+            fieldlayout.addRow(settings.detailFields[number], control)
+        
+        for number, control in enumerate(self.checkboxes):
+            fieldlayout.addRow(settings.detailChecks[number], control)
 
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
@@ -84,12 +98,22 @@ class MainWindow(QtWidgets.QMainWindow):
             self.saveData = z[0]
 
     def showSelection(self):
+        # Just clear out all the fields here perhaps?
         z = self.table.selectedIndexes()[0]
-        print(f'row is {z.row()} and column is {z.column()}')
         lookup = self.model.data(z, Qt.ItemDataRole.DisplayRole)
-        if self.saveData.get(lookup).get('name'):
-            text = self.saveData.get(lookup).get('name')
-            self.detailName.setText(text)
+        # OR Rework below, so it always matches values to z so fields get cleared at each click.
+        for i, fld in enumerate(settings.detailFields):
+            z = self.saveData.get(lookup)
+            value = z.get(fld) if z else '' 
+            self.records[i].setText(value)
+        
+        for i, fld in enumerate(settings.detailChecks):
+            y = 'False'
+            z = self.saveData.get(lookup)
+            if z:
+                y = z.get(fld) 
+            value = Qt.CheckState.Checked if y == "True" else Qt.CheckState.Unchecked
+            self.checkboxes[i].setCheckState(value)
 
     def generate(self):
         start = int(self.displayStart.text())
