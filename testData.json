@@ -4,7 +4,7 @@
          {
             "Site": "1800HVLND",
             "Name": "home",
-            "Vrf": "global",
+            "Vrf": "GLOBAL",
             "Site Summ": "True"
          }
 }

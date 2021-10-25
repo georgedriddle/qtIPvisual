@@ -2,7 +2,13 @@
     "192.168.1.0/24": {
         "Site": "1800HVLND",
         "Name": "home",
-        "Vrf": "global",
+        "Vrf": "GLOBAL",
         "Site Summ": "True"
+    },
+    "192.168.0.0/24": {
+        "Vrf": "VOIP"
+    },
+    "192.168.2.0/24": {
+        "Vrf": "DATA"
     }
 }
