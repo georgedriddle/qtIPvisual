@@ -1,15 +1,15 @@
+# from os import FileDescriptor
 import json
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QRegularExpression
 from PyQt6.QtGui import (
-    QValidator,
     QIntValidator,
     QRegularExpressionValidator,
 )
 import databuilder
-import settings
+from settings import user_fields
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -18,15 +18,19 @@ class TableModel(QtCore.QAbstractTableModel):
         self._data = data
 
     def data(self, index, role):
+        item = self._data[index.row()][index.column()]
+       
         if role == Qt.ItemDataRole.DisplayRole:
-            return str(self._data[index.row()][index.column()])
+            out = ''
+            for key, value in item.items():
+                if key not in ['color', 'spansize']:
+                    out += f'{key}: {value}\n'
+            return out
 
         if role == Qt.ItemDataRole.BackgroundRole:
             value = self._data[index.row()][index.column()]
-            vrfcolormap = settings.metadata['Vrf']['colorMap']
-            vrf = value.get('Vrf')
-            if vrf in vrfcolormap.keys():
-                return QtGui.QColor(vrfcolormap[vrf])
+            if item.get('color'):
+                return QtGui.QColor(item.get('color'))
 
     def rowCount(self, index):
         return len(self._data)
@@ -79,12 +83,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(widget)
         self.setGeometry(600, 100, 400, 200)
 
-        fields = QtWidgets.QWidget()
-        fields.setMaximumWidth(300)
+        fields_section = QtWidgets.QWidget()
+        fields_section.setMaximumWidth(300)
         self.records = []
         self.checkboxes = []
         fieldlayout = QtWidgets.QFormLayout()
-        fields.setLayout(fieldlayout)
+        fields_section.setLayout(fieldlayout)
         filebtn = QtWidgets.QPushButton("Load")
         filebtn.clicked.connect(self.getFile)
         fieldlayout.addRow(filebtn)
@@ -92,23 +96,19 @@ class MainWindow(QtWidgets.QMainWindow):
         savebtn = QtWidgets.QPushButton("Save")
         savebtn.clicked.connect(self.save)
         fieldlayout.addRow(savebtn)
-        dataFields = ['key']
-        dataFields.extend(settings.detailFields)
-        for field in dataFields:
-            z = QtWidgets.QLineEdit()
-            self.records.append(z)
-        for box in settings.detailChecks:
-            z = QtWidgets.QCheckBox()
-            self.checkboxes.append(z)
+        fieldlayout.addRow('key', QtWidgets.QLineEdit())
+        self.ufields = {}
+        for val in user_fields.keys():
+            if user_fields[val]["controlType"] == "lineEdit":
+                self.ufields[val] = QtWidgets.QLineEdit()
+            if user_fields[val]['controlType'] == 'checkbox':
+                self.ufields[val] = QtWidgets.QCheckBox()
 
-        for number, control in enumerate(self.records):
-            fieldlayout.addRow(dataFields[number], control)
-
-        for number, control in enumerate(self.checkboxes):
-            fieldlayout.addRow(settings.detailChecks[number], control)
+        for key, value in self.ufields.items():
+            fieldlayout.addRow(key, value)
 
         updateBtn = QtWidgets.QPushButton("Update!")
-        updateBtn.clicked.connect(self.updateRecord)
+        # updateBtn.clicked.connect(self.updateRecord)
         fieldlayout.addRow(updateBtn)
 
         layout = QtWidgets.QGridLayout()
@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.displayEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.btnGenerate, 2, 0)
         layout.addWidget(self.table, 3, 4)
-        layout.addWidget(fields, 3, 0)
+        layout.addWidget(fields_section, 3, 0)
         widget.setLayout(layout)
 
     def selectFile(self):
@@ -135,9 +135,9 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Failed to load File")
             # Todo: Make this message appear in status Bar.
 
-    def updateRecord(self, key):
-        for num, name in enumerate(settings.detailFields):
-            print(num, name)
+    #def updateRecord(self, key):
+    #    for num, name in enumerate(settings.detailFields):
+    #        print(num, name)
 
     def save(self):
         fileToSave = self.selectFile()
@@ -152,29 +152,33 @@ class MainWindow(QtWidgets.QMainWindow):
         z = self.table.selectedIndexes()[0]
         lookup = self.model.data(z, Qt.ItemDataRole.DisplayRole)
         self.records[0].setText(lookup)
-        for i, fld in enumerate(settings.detailFields):
+        for i, fld in enumerate(user_fields.keys()):
             z = self.saveData.get(lookup)
             value = z.get(fld) if z else ""
             self.records[i + 1].setText(value)
 
-        for i, fld in enumerate(settings.detailChecks):
-            y = "False"
-            z = self.saveData.get(lookup)
-            if z:
-                y = z.get(fld)
-            value = Qt.CheckState.Checked if y == "True" else Qt.CheckState.Unchecked
-            self.checkboxes[i].setCheckState(value)
-    
-    
+        #for i, fld in enumerate(settings.detailChecks):
+        #    y = "False"
+        #    z = self.saveData.get(lookup)
+        #    if z:
+        #        y = z.get(fld)
+        #    value = Qt.CheckState.Checked if y == "True" else Qt.CheckState.Unchecked
+        #    self.checkboxes[i].setCheckState(value)
+
     def merge(self, tableIn, records):
         z = None
         for row in tableIn:
-            for column in row:
-                y = column.get('network')
+            for cell in row:
+                y = cell.get('network')
                 if y:
-                    z = records.get(column['network'])
-                if z:
-                    column.update(z)
+                    z = records.get(y)
+                    if z:
+                        for key, value in z.items():
+                            if user_fields[key]['show'] == True:
+                                cell.update({key: value})
+                            fillcolor = user_fields[key]['colorMap'].get(value)
+                            cell.update({'color': fillcolor})
+
 
     def generate(self):
         start = int(self.displayStart.text())

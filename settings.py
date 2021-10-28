@@ -1,14 +1,11 @@
-detailFields = ["Site", "Name", "Vrf"]
-
-detailChecks = ["Ent.Summ", "Site Summ"]
-
-metadata = {
-    "site": {"controlType": "lineEdit", "colorMap": {}},
-    "Name": {"controlType": "lineEdit", "colorMap": {}},
+user_fields = {
+    "Site": {"controlType": "lineEdit", "colorMap": {}, "show": True},
+    "Name": {"controlType": "lineEdit", "colorMap": {}, "show": True},
     "Vrf": {
         "controlType": "lineEdit",
         "colorMap": {"GLOBAL": "green", "DATA": "orange", "VOIP": "purple"},
+                     "show": True
     },
-    "Ent.Summ": {"controlType": "checkbox", "colorMap": {}},
-    "Site.Summ": {"controlType": "checkbox", "colorMap": {}},
+    "Ent Summ": {"controlType": "checkbox", "colorMap": {}, "show": True},
+    "Site Summ": {"controlType": "checkbox", "colorMap": {}, "show": True},
 }
