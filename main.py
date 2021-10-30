@@ -177,7 +177,9 @@ class MainWindow(QtWidgets.QMainWindow):
                             if user_fields[key]['show'] == True:
                                 cell.update({key: value})
                             fillcolor = user_fields[key]['colorMap'].get(value)
-                            cell.update({'color': fillcolor})
+                            if fillcolor:
+                                cell.update({'color': fillcolor})
+                print(cell)
 
 
     def generate(self):
