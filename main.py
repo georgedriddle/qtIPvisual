@@ -19,12 +19,15 @@ class TableModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role):
         item = self._data[index.row()][index.column()]
-       
+
         if role == Qt.ItemDataRole.DisplayRole:
             out = ''
             for key, value in item.items():
                 if key not in ['color', 'spansize']:
-                    out += f'{key}: {value}\n'
+                    if key == 'network':
+                        out += f'{value}\n'
+                    else:
+                        out += f'{key}: {value}\n'
             return out
 
         if role == Qt.ItemDataRole.BackgroundRole:
@@ -85,8 +88,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         fields_section = QtWidgets.QWidget()
         fields_section.setMaximumWidth(300)
-        self.records = []
-        self.checkboxes = []
         fieldlayout = QtWidgets.QFormLayout()
         fields_section.setLayout(fieldlayout)
         filebtn = QtWidgets.QPushButton("Load")
@@ -96,8 +97,7 @@ class MainWindow(QtWidgets.QMainWindow):
         savebtn = QtWidgets.QPushButton("Save")
         savebtn.clicked.connect(self.save)
         fieldlayout.addRow(savebtn)
-        fieldlayout.addRow('key', QtWidgets.QLineEdit())
-        self.ufields = {}
+        self.ufields = {'key': QtWidgets.QLineEdit()}
         for val in user_fields.keys():
             if user_fields[val]["controlType"] == "lineEdit":
                 self.ufields[val] = QtWidgets.QLineEdit()
@@ -108,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
             fieldlayout.addRow(key, value)
 
         updateBtn = QtWidgets.QPushButton("Update!")
-        # updateBtn.clicked.connect(self.updateRecord)
+        updateBtn.clicked.connect(self.updateRecord)
         fieldlayout.addRow(updateBtn)
 
         layout = QtWidgets.QGridLayout()
@@ -135,9 +135,9 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Failed to load File")
             # Todo: Make this message appear in status Bar.
 
-    #def updateRecord(self, key):
+    def updateRecord(self, key):
+        self.ufields['key'].setText("hello")
     #    for num, name in enumerate(settings.detailFields):
-    #        print(num, name)
 
     def save(self):
         fileToSave = self.selectFile()
@@ -148,23 +148,34 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Save Failed, did not get a file from file dialog")
             # Todo: Make this message appear in status Bar.
 
+    def clearUfileds(self):
+        for key, control in self.ufields.items():
+            if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
+                self.ufields[key].setText('')
+
     def showSelection(self):
+        ''' Checkboxes still need to be done'''
+        self.clearUfileds()
         z = self.table.selectedIndexes()[0]
-        lookup = self.model.data(z, Qt.ItemDataRole.DisplayRole)
-        self.records[0].setText(lookup)
-        for i, fld in enumerate(user_fields.keys()):
-            z = self.saveData.get(lookup)
-            value = z.get(fld) if z else ""
-            self.records[i + 1].setText(value)
-
-        #for i, fld in enumerate(settings.detailChecks):
-        #    y = "False"
-        #    z = self.saveData.get(lookup)
-        #    if z:
-        #        y = z.get(fld)
-        #    value = Qt.CheckState.Checked if y == "True" else Qt.CheckState.Unchecked
-        #    self.checkboxes[i].setCheckState(value)
-
+        selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
+        selected_cidr = selectedDisplay.split()[0]
+        self.ufields['key'].setText(selected_cidr)
+        data = self.saveData.get(selected_cidr)
+        if data:
+            for name in data:
+                print(f'control is {self.ufields.get(name)}')
+                if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
+                    text = self.saveData[selected_cidr].get(name)
+                    self.ufields[name].setText(text)
+                else:
+                    self.ufields[name].setText('')
+                if type(self.ufields.get(name)) == QtWidgets.QCheckBox:
+                    val = self.saveData[selected_cidr].get(name)
+                    print(f'checkbox value is {val}')
+                    if val == 'True':
+                        self.ufields[name].setCheckState(Qt.CheckState.Checked)
+                    else:
+                        self.ufields[name].setCheckState(Qt.CheckState.Unchecked)
     def merge(self, tableIn, records):
         z = None
         for row in tableIn:
@@ -179,8 +190,6 @@ class MainWindow(QtWidgets.QMainWindow):
                             fillcolor = user_fields[key]['colorMap'].get(value)
                             if fillcolor:
                                 cell.update({'color': fillcolor})
-                print(cell)
-
 
     def generate(self):
         start = int(self.displayStart.text())
