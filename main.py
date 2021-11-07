@@ -52,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         cidrRegex = QRegularExpressionValidator(QRegularExpression(matchcidr))
         self.setWindowTitle("IP-Visualizer")
-        self.setGeometry(100, 100, 400, 400)
+        self.setGeometry(100, 100, 600, 800)
 
         self.saveData = {}
         self.filebtn = QtWidgets.QPushButton("Open File")
@@ -135,9 +135,23 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Failed to load File")
             # Todo: Make this message appear in status Bar.
 
-    def updateRecord(self, key):
-        self.ufields['key'].setText("hello")
-    #    for num, name in enumerate(settings.detailFields):
+    def updateRecord(self):
+        ''' oops, returning controls not their values.'''
+        key = self.ufields.get('key').text() #Get key from field list
+        if key:
+            if self.saveData.get(key): #Check in it exists in save data
+                self.saveData.pop(key) # Delete it if it does.
+            self.saveData[key] = {}
+            for ref, val in self.ufields.items(): #terrible var names..
+                if ref == 'key':
+                    ...
+                elif user_fields[ref]['controlType'] == 'lineEdit':
+                    self.saveData[key][ref] = val.text()
+                elif user_fields[ref]['controlType'] == 'checkbox':
+                    if val.checkState() == Qt.CheckState.Checked:
+                        self.saveData[key][ref] = True
+            print(self.saveData[key])
+
 
     def save(self):
         fileToSave = self.selectFile()
@@ -163,7 +177,6 @@ class MainWindow(QtWidgets.QMainWindow):
         data = self.saveData.get(selected_cidr)
         if data:
             for name in data:
-                print(f'control is {self.ufields.get(name)}')
                 if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
                     text = self.saveData[selected_cidr].get(name)
                     self.ufields[name].setText(text)
@@ -171,7 +184,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ufields[name].setText('')
                 if type(self.ufields.get(name)) == QtWidgets.QCheckBox:
                     val = self.saveData[selected_cidr].get(name)
-                    print(f'checkbox value is {val}')
                     if val == 'True':
                         self.ufields[name].setCheckState(Qt.CheckState.Checked)
                     else:

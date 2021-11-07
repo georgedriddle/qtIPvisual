@@ -1,0 +1,9 @@
+elif (type(user_fields[ref]['controlType']) == 'lineEdit'):
+                    print("This is a line edit")
+                    self.saveData[key][ref] = val.text()
+                elif type(self.ufields.get(key)) == QtWidgets.QCheckBox:
+                    print('this is a checkbox')
+                    if val.Qt.Checkstate == Qt.CheckState.Checked:
+                        self.saveData[key][ref] = True
+            #self.saveData.update(self.ufields)
+            print(self.saveData[key])
