@@ -4,7 +4,7 @@ user_fields = {
     "Vrf": {
         "controlType": "lineEdit",
         "colorMap": {"GLOBAL": "green", "DATA": "orange", "VOIP": "purple"},
-                     "show": True
+        "show": True
     },
     "Ent Summ": {"controlType": "checkbox", "colorMap": {}, "show": True},
     "Site Summ": {"controlType": "checkbox", "colorMap": {}, "show": True},

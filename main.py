@@ -136,13 +136,12 @@ class MainWindow(QtWidgets.QMainWindow):
             # Todo: Make this message appear in status Bar.
 
     def updateRecord(self):
-        ''' oops, returning controls not their values.'''
-        key = self.ufields.get('key').text() #Get key from field list
+        key = self.ufields.get('key').text()  # Get key from field list
         if key:
-            if self.saveData.get(key): #Check in it exists in save data
-                self.saveData.pop(key) # Delete it if it does.
+            if self.saveData.get(key):  # Check in it exists in save data
+                self.saveData.pop(key)  # Delete it if it does.
             self.saveData[key] = {}
-            for ref, val in self.ufields.items(): #terrible var names..
+            for ref, val in self.ufields.items():  # terrible var names..
                 if ref == 'key':
                     ...
                 elif user_fields[ref]['controlType'] == 'lineEdit':
@@ -151,7 +150,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     if val.checkState() == Qt.CheckState.Checked:
                         self.saveData[key][ref] = True
             print(self.saveData[key])
-
 
     def save(self):
         fileToSave = self.selectFile()
@@ -187,7 +185,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     if val == 'True':
                         self.ufields[name].setCheckState(Qt.CheckState.Checked)
                     else:
-                        self.ufields[name].setCheckState(Qt.CheckState.Unchecked)
+                        self.ufields[name].setCheckState(
+                            Qt.CheckState.Unchecked)
+
     def merge(self, tableIn, records):
         z = None
         for row in tableIn:
@@ -197,7 +197,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     z = records.get(y)
                     if z:
                         for key, value in z.items():
-                            if user_fields[key]['show'] == True:
+                            show = user_fields[key]['show']
+                            if show:
                                 cell.update({key: value})
                             fillcolor = user_fields[key]['colorMap'].get(value)
                             if fillcolor:
