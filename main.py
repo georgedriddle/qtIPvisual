@@ -1,4 +1,3 @@
-# from os import FileDescriptor
 import json
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
@@ -9,7 +8,6 @@ from PyQt6.QtGui import (
     QRegularExpressionValidator,
 )
 import databuilder
-from settings import user_fields
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -45,14 +43,14 @@ class TableModel(QtCore.QAbstractTableModel):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-
+        self.user_fields = {}
         self.zero32 = QIntValidator(0, 32)
         matchcidr = QRegularExpression(
             r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
         )
         cidrRegex = QRegularExpressionValidator(QRegularExpression(matchcidr))
         self.setWindowTitle("IP-Visualizer")
-        self.setGeometry(100, 100, 600, 800)
+        self.setGeometry(50, 50, 1000, 1200)
 
         self.saveData = {}
         self.filebtn = QtWidgets.QPushButton("Open File")
@@ -98,12 +96,8 @@ class MainWindow(QtWidgets.QMainWindow):
         savebtn.clicked.connect(self.save)
         fieldlayout.addRow(savebtn)
         self.ufields = {'key': QtWidgets.QLineEdit()}
-        for val in user_fields.keys():
-            if user_fields[val]["controlType"] == "lineEdit":
-                self.ufields[val] = QtWidgets.QLineEdit()
-            if user_fields[val]['controlType'] == 'checkbox':
-                self.ufields[val] = QtWidgets.QCheckBox()
-
+        self.getFile()
+        self.update_user_fields()
         for key, value in self.ufields.items():
             fieldlayout.addRow(key, value)
 
@@ -123,6 +117,14 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(fields_section, 3, 0)
         widget.setLayout(layout)
 
+    def update_user_fields(self):
+        print(f"User_fields is {self.user_fields}")
+        for val in self.user_fields.keys():
+            if self.user_fields[val]["controlType"] == "lineEdit":
+                self.ufields[val] = QtWidgets.QLineEdit()
+            if self.user_fields[val]['controlType'] == 'checkbox':
+                self.ufields[val] = QtWidgets.QCheckBox()
+
     def selectFile(self):
         return QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
 
@@ -131,6 +133,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if file[0]:
             with open(file[0], "r") as F1:
                 self.saveData = json.load(F1)
+                self.user_fields = self.saveData['fields']
+                self.saveData.pop('fields')
         else:
             print("Failed to load File")
             # Todo: Make this message appear in status Bar.
@@ -144,12 +148,11 @@ class MainWindow(QtWidgets.QMainWindow):
             for ref, val in self.ufields.items():  # terrible var names..
                 if ref == 'key':
                     ...
-                elif user_fields[ref]['controlType'] == 'lineEdit':
+                elif self.user_fields[ref]['controlType'] == 'lineEdit':
                     self.saveData[key][ref] = val.text()
-                elif user_fields[ref]['controlType'] == 'checkbox':
+                elif self.user_fields[ref]['controlType'] == 'checkbox':
                     if val.checkState() == Qt.CheckState.Checked:
                         self.saveData[key][ref] = True
-            print(self.saveData[key])
 
     def save(self):
         fileToSave = self.selectFile()
@@ -166,7 +169,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ufields[key].setText('')
 
     def showSelection(self):
-        ''' Checkboxes still need to be done'''
         self.clearUfileds()
         z = self.table.selectedIndexes()[0]
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
@@ -190,6 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def merge(self, tableIn, records):
         z = None
+        fillcolor = ''
         for row in tableIn:
             for cell in row:
                 y = cell.get('network')
@@ -197,10 +200,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     z = records.get(y)
                     if z:
                         for key, value in z.items():
-                            show = user_fields[key]['show']
-                            if show:
+                            show = self.user_fields[key]['show']
+                            if show == 'True':
                                 cell.update({key: value})
-                            fillcolor = user_fields[key]['colorMap'].get(value)
+                                if k:= self.user_fields.get(key):
+                                    fillcolor = k['colorMap'].get(value)
                             if fillcolor:
                                 cell.update({'color': fillcolor})
 
