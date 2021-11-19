@@ -1,0 +1,11 @@
+Coloring
+    pattern matching for rules
+    Colormap off of checkbox state.
+    Priority for multiple matches (or even a multicolor fill)
+Print function
+Fields
+    More robust field handeling.
+        Dynamically add new field if discovered.
+            Run through dictionary once to complete a discovery.
+    GUI based field editor.
+

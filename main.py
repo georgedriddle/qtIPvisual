@@ -52,6 +52,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("IP-Visualizer")
         self.setGeometry(50, 50, 1000, 1200)
 
+        menubar = QtWidgets.QMenuBar()
+        menubar.setMaximumWidth(50)
+        fileMenu = menubar.addMenu("File")
+        fileMenu.addAction("New Dataset")
+        fileMenu.addAction("Open a Dataset")
+        fileMenu.addAction("Save a Dataset")
+        fileMenu.addAction("Print")
+        fileMenu.addAction("Exit")
+
+        self.setStatusBar(QtWidgets.QStatusBar(self))
         self.saveData = {}
         self.filebtn = QtWidgets.QPushButton("Open File")
         self.filebtn.clicked.connect(self.getFile)
@@ -106,15 +116,16 @@ class MainWindow(QtWidgets.QMainWindow):
         fieldlayout.addRow(updateBtn)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.displayNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.labelStart, 0, 1, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.displayStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.labelEnd, 0, 2, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.displayEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.btnGenerate, 2, 0)
-        layout.addWidget(self.table, 3, 4)
-        layout.addWidget(fields_section, 3, 0)
+        layout.addWidget(menubar, 0, 0)
+        layout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayNetwork, 2, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.labelStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.btnGenerate, 3, 0)
+        layout.addWidget(self.table, 4, 4)
+        layout.addWidget(fields_section, 4, 0)
         widget.setLayout(layout)
 
     def update_user_fields(self):
@@ -134,12 +145,12 @@ class MainWindow(QtWidgets.QMainWindow):
             with open(file[0], "r") as F1:
                 self.saveData = json.load(F1)
                 self.user_fields = self.saveData['fields']
-                self.saveData.pop('fields')
         else:
             print("Failed to load File")
-            # Todo: Make this message appear in status Bar.
+            self.statusTip = "Failed to Load File!"
 
     def updateRecord(self):
+        self.setStatusTip("Time to update SaveData!")
         key = self.ufields.get('key').text()  # Get key from field list
         if key:
             if self.saveData.get(key):  # Check in it exists in save data

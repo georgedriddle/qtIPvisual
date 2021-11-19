@@ -1,4 +1,0 @@
-Just have a color field, evaluate and update the color field before merging.
-
-Can a targeted update to table view be done if we know its within the current
-display range?
