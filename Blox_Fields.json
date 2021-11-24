@@ -1,0 +1,94 @@
+{
+    "fields": {
+        "OBJECT": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "CIDR": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "O1": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "O2": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "O3": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "O4": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "MASKLEN": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "AddressType": {
+            "controlType": "lineEdit",
+            "colorMap": {
+                "DATA": "ORANGE",
+                "GLOBAL": "GREEN",
+                "VOIP": "PURPLE",
+                "KGPT": "RED"
+            },
+            "show": "True"
+        },
+        "Enclave": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "SubnetName": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "SummaryType": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "Site": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "State": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "Building": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "Interface": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "NodeType": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        },
+        "Region": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "False"
+        }
+    }
+}

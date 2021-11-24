@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "..\\qt\\ModulesListing"
+		},
+		{
+			"path": "..\\qt\\LearningExamples"
 		}
 	],
 	"launch": {

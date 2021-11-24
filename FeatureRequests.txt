@@ -2,6 +2,7 @@ Coloring
     pattern matching for rules
     Colormap off of checkbox state.
     Priority for multiple matches (or even a multicolor fill)
+    Show has to be True for coloring to work, kind of the opposite of what I want.
 Print function
 Fields
     More robust field handeling.
@@ -9,3 +10,15 @@ Fields
             Run through dictionary once to complete a discovery.
     GUI based field editor.
 
+Make sure everything reloads on load button.
+
+Move Load and Save to File menu, add toolbars later.
+Fix layout, dedicated widgets for each section
+    menu
+    Network Fields
+    Detail Fields
+    Data Display
+Updates
+| What                         | When     |
+| ---------------------------- | -------- |
+| Save Button, saves correctly | 11/19/21 |
