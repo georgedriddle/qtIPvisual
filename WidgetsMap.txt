@@ -1,0 +1,8 @@
+widget
+    layout = QVbox , name = layout.
+        header , QHbox
+        
+    layout = Q
+    fields_section
+        layout = QFormLayout, name= fieldlayout
+            

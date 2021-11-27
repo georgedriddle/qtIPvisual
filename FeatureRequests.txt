@@ -1,24 +1,38 @@
 Coloring
     pattern matching for rules
     Colormap off of checkbox state.
-    Priority for multiple matches (or even a multicolor fill)
     Show has to be True for coloring to work, kind of the opposite of what I want.
-Print function
+    Gui based color chooser and priority setter.
+
 Fields
     More robust field handeling.
         Dynamically add new field if discovered.
             Run through dictionary once to complete a discovery.
     GUI based field editor.
+    Make actions a menu at top of field section. Update & Delete.
 
-Make sure everything reloads on load button.
+General
+    Print function
+    History logging off all actions taken, updates made. Eventually inlcude some sort of replay or undue option to put back or remove a previous update.
+    Auto Save, make it a user selectable option.
 
-Move Load and Save to File menu, add toolbars later.
 Fix layout, dedicated widgets for each section
     menu
     Network Fields
     Detail Fields
     Data Display
+
+BUGS:
+| MAJOR | Fields do not get updated on load, will crash the program while running.                                                                        |
+
 Updates
-| What                         | When     |
-| ---------------------------- | -------- |
-| Save Button, saves correctly | 11/19/21 |
+| What                                        | When     |
+| ------------------------------------------- | -------- |
+| Save Button, saves correctly                | 11/19/21 |
+| Toobar icons for Load & Save                | 11/23/21 |
+| Got rid of "time to saveData status message | 11/24/21 |
+| Display name of currently opened file       | 11/24/21 |
+| Fixed wrongful coloring issue               | 11/26/21 |
+| Color Weights implemented                   | 11/27/21 |
+|                                             |          |
+
