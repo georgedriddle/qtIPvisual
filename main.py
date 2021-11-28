@@ -39,7 +39,7 @@ class TableModel(QtCore.QAbstractTableModel):
         return len(self._data)
 
     def columnCount(self, index):
-        return len(self._data[0])
+        return len(self._data[0])S
 
 
 class MainWindow(QtWidgets.QMainWindow):
