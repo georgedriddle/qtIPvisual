@@ -39,7 +39,7 @@ class TableModel(QtCore.QAbstractTableModel):
         return len(self._data)
 
     def columnCount(self, index):
-        return len(self._data[0])S
+        return len(self._data[0])
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -49,7 +49,6 @@ class MainWindow(QtWidgets.QMainWindow):
     cidrRegex = QRegularExpressionValidator(QRegularExpression(matchcidr))
     def __init__(self):
         super().__init__()
-        self.fieldsData = {}
         self.zero32 = QIntValidator(0, 32)
         self.setWindowTitle("IP-Visualizer")
         self.setGeometry(50, 50, 1000, 1200)
@@ -154,24 +153,20 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setLayout(layout)
 
     def update_user_fields(self):
-        for val in self.fieldsData.keys():
-            if self.fieldsData[val]["controlType"] == "lineEdit":
+        for val in self.saveData['fields'].keys():
+            if self.saveData['fields'][val]["controlType"] == "lineEdit":
                 self.ufields[val] = QtWidgets.QLineEdit()
-            if self.fieldsData[val]['controlType'] == 'checkbox':
+            if self.saveData['fields'][val]['controlType'] == 'checkbox':
                 self.ufields[val] = QtWidgets.QCheckBox()
 
     def loadSaveData(self):
-        ''' 1. Loads file into saveData dictionary
-            2. Loads Fields section into user_fields dictionary
-        '''
+        ''' 1. Loads file into saveData dictionary'''
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
         if file[0]:
             with open(file[0], "r") as F1:
                 self.saveData = json.load(F1)
-                self.fieldsData = self.saveData['fields']
             self.openfile.setText(file[0])
         else:
-            print("Failed to load File")
             self.statusTip = "Failed to Load File"
 
     def updateFormFields(self):
@@ -183,9 +178,9 @@ class MainWindow(QtWidgets.QMainWindow):
             for ref, val in self.ufields.items():  # terrible var names..
                 if ref == 'key':
                     ...
-                elif self.fieldsData[ref]['controlType'] == 'lineEdit':
+                elif self.saveData['fields'][ref]['controlType'] == 'lineEdit':
                     self.saveData[key][ref] = val.text()
-                elif self.fieldsData[ref]['controlType'] == 'checkbox':
+                elif self.saveData['fields'][ref]['controlType'] == 'checkbox':
                     if val.checkState() == Qt.CheckState.Checked:
                         self.saveData[key][ref] = True
 
@@ -202,17 +197,12 @@ class MainWindow(QtWidgets.QMainWindow):
             with open(fileToSave[0], "w") as F1:
                 json.dump(self.saveData, F1, indent=4)
 
-    def print(self):
-        print("doing the printing thing!")
-        dialog = QtGui.QPrintDialog()
-
-
     def clearUfileds(self):
         for key in self.ufields.keys():
             if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
                 self.ufields[key].setText('')
 
-            elif type(self.fieldsData.get(key)) == QtWidgets.QCheckBox:
+            elif type(self.saveData['fields'].get(key)) == QtWidgets.QCheckBox:
                     self.ufields[key] == Qt.CheckState.Unchecked
 
 
@@ -250,17 +240,16 @@ class MainWindow(QtWidgets.QMainWindow):
                     cidrDetails = records.get(cidr)  # SaveData records.
                     if cidrDetails:
                         for property, value in cidrDetails.items():
-                            if self.fieldsData[property]['show'] == 'True':
+                            if self.saveData['fields'][property]['show'] == 'True':
                                 cell[property] = value
                                 if self.saveData[cidr].get(property):
-                                    fillcolor = self.fieldsData[property]['colorMap'].get(value)
-                                    colorWeight = self.fieldsData[property].get("colorWeight")
+                                    fillcolor = self.saveData['fields'][property]['colorMap'].get(value)
+                                    colorWeight = self.saveData['fields'][property].get("colorWeight")
                                     if colorWeight == None:
                                         colorWeight = 0
                                     if colorWeight > fillweight:
                                         fillweight = colorWeight
                                         cell['color'] = fillcolor
-                                        print(f'cell is: {cell}')
 
     def generate(self):
         start = int(self.displayStart.text())
