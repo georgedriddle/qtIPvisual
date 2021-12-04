@@ -73,21 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toolbar.addAction(self.aboutAction)
 
         self.setStatusBar(QtWidgets.QStatusBar(self))
-
-        
-        self.headerWidget = QtWidgets.QWidget()
-        self.headerWidgetLayout = QtWidgets.QGridLayout()
-        self.headerWidgetLayout.addWidget(
-              self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
-        self.headerWidgetLayout.addWidget(    
-              self.displayNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
-
-        self.windowWidget = QtWidgets.QWidget()
-        self.windowWidgetLayout = QtWidgets.QVBoxLayout()
-        self.windowWidgetLayout.addLayout(self.headerWidgetLayout)
-        self.table = QtWidgets.QTableView()
-        self.table.clicked.connect(self.showSelection)
-
+#  Header Controls
         self.labelNetwork = QtWidgets.QLabel("Network to Visualze")
         self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
         self.displayNetwork.setMaxLength(18)
@@ -105,6 +91,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.displayEnd.setMaximumWidth(25)
         self.displayEnd.setMaxLength(2)
         self.displayEnd.setValidator(self.zero32)
+# Header Layout
+        self.headerWidget = QtWidgets.QWidget()
+        self.headerWidgetLayout = QtWidgets.QGridLayout()
+    #Row 0
+        self.headerWidgetLayout.addWidget(
+              self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
+        self.headerWidgetLayout.addWidget(
+              self.labelStart, 0, 1, Qt.AlignmentFlag.AlignLeft)
+        self.headerWidgetLayout.addWidget(
+            self.labelEnd, 0, 2, Qt.AlignmentFlag.AlignLeft)
+    #Row 1
+        self.headerWidgetLayout.addWidget(    
+              self.displayNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
+        self.headerWidgetLayout.addWidget(
+              self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
+        self.headerWidgetLayout.addWidget(
+              self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
+        
+        self.windowWidget = QtWidgets.QWidget()
+        self.windowWidgetLayout = QtWidgets.QVBoxLayout()
+        self.windowWidgetLayout.addLayout(self.headerWidgetLayout)
+
+        self.table = QtWidgets.QTableView()
+        self.table.clicked.connect(self.showSelection)
 
         self.btnGenerate = QtWidgets.QPushButton("Generate")
         self.btnGenerate.setMaximumWidth(100)
@@ -135,11 +145,6 @@ class MainWindow(QtWidgets.QMainWindow):
         fieldlayout.addRow(updateBtn)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget()
-        layout.addWidget(self.labelStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.btnGenerate, 3, 0)
         layout.addWidget(self.openfile, 3, 4)
         layout.addWidget(self.table, 4, 4)
