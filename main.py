@@ -3,12 +3,6 @@ from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QRegularExpression
-from PyQt6.QtGui import (
-    QAction,
-    QIcon,
-    QIntValidator,
-    QRegularExpressionValidator,
-)
 import databuilder
 
 
@@ -46,49 +40,51 @@ class MainWindow(QtWidgets.QMainWindow):
     matchcidr = QRegularExpression(
             r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
         )
-    cidrRegex = QRegularExpressionValidator(QRegularExpression(matchcidr))
+    cidrvalid = QtGui.QRegularExpressionValidator(matchcidr)
+    zero32 = QtGui.QIntValidator(0, 32)
     def __init__(self):
         super().__init__()
-        self.zero32 = QIntValidator(0, 32)
         self.setWindowTitle("IP-Visualizer")
         self.setGeometry(50, 50, 1000, 1200)
 
-        toolbar = QtWidgets.QToolBar("Tool Bar Title")
-        self.addToolBar(toolbar)
+        self.loadIcon = QtGui.QIcon("icons/database--plus.png")
+        self.loadAction = QtGui.QAction(self.loadIcon, "Load", self)
+        self.loadAction.setStatusTip("Load Data!")
+        self.loadAction.triggered.connect(self.loadSaveData)
 
-        loadIcon = QtGui.QIcon("icons/database--plus.png")
-        loadAction = QtGui.QAction(loadIcon, "Load", self)
-        loadAction.setStatusTip("Load Data!")
-        loadAction.triggered.connect(self.loadSaveData)
+        self.saveicon = QtGui.QIcon("icons/disk-return.png")
+        self.saveAction = QtGui.QAction(self.saveicon, "Save", self)
+        self.saveAction.setStatusTip("save data to file")
+        self.saveAction.triggered.connect(self.save)
 
-        saveicon = QtGui.QIcon("icons/disk-return.png")
-        saveAction = QtGui.QAction(saveicon, "Save", self)
-        saveAction.setStatusTip("save data to file")
-        saveAction.triggered.connect(self.save)
+        self.printIcon = QtGui.QIcon("icons/printer.png")
+        self.printAction = QtGui.QAction(self.printIcon, "Print", self)
+        self.printAction.setStatusTip("Not Implemented")
 
-        printIcon = QtGui.QIcon("icons/printer.png")
-        printAction = QtGui.QAction(printIcon, "Print", self)
-        printAction.setStatusTip("Not Implemented")
-        aboutIcon = QtGui.QIcon("icons/question-button.png")
-        aboutAction = QtGui.QAction(aboutIcon, "About", self)
-        aboutAction.setStatusTip("Not Implemented")
+        self.aboutIcon = QtGui.QIcon("icons/question-button.png")
+        self.aboutAction = QtGui.QAction(self.aboutIcon, "About", self)
+        self.aboutAction.setStatusTip("Not Implemented")
 
-        toolbar.addAction(loadAction)
-        toolbar.addAction(saveAction)
-        toolbar.addAction(printAction)
-        toolbar.addAction(aboutAction)
-
-        printAction = QtGui.QAction("Print It!", self)
-        printAction.triggered.connect(print)
-
-        menubar = QtWidgets.QMenuBar()
-        menubar.setMaximumWidth(50)
+        self.toolbar = QtWidgets.QToolBar("Tool Bar")
+        self.addToolBar(self.toolbar)
+        self.toolbar.addAction(self.loadAction)
+        self.toolbar.addAction(self.saveAction)
+        self.toolbar.addAction(self.printAction)
+        self.toolbar.addAction(self.aboutAction)
 
         self.setStatusBar(QtWidgets.QStatusBar(self))
-        self.saveData = {}
-        self.filebtn = QtWidgets.QPushButton("Open File")
-        self.filebtn.clicked.connect(self.loadSaveData)
-        widget = QtWidgets.QWidget()
+
+        
+        self.headerWidget = QtWidgets.QWidget()
+        self.headerWidgetLayout = QtWidgets.QGridLayout()
+        self.headerWidgetLayout.addWidget(
+              self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
+        self.headerWidgetLayout.addWidget(    
+              self.displayNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
+
+        self.windowWidget = QtWidgets.QWidget()
+        self.windowWidgetLayout = QtWidgets.QVBoxLayout()
+        self.windowWidgetLayout.addLayout(self.headerWidgetLayout)
         self.table = QtWidgets.QTableView()
         self.table.clicked.connect(self.showSelection)
 
@@ -96,7 +92,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
         self.displayNetwork.setMaxLength(18)
         self.displayNetwork.setMaximumWidth(125)
-        self.displayNetwork.setValidator(self.cidrRegex)
+        self.displayNetwork.setValidator(self.cidrvalid)
 
         self.labelStart = QtWidgets.QLabel("Start")
         self.displayStart = QtWidgets.QLineEdit("24")
@@ -115,7 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btnGenerate.clicked.connect(self.generate)
 
         self.openfile = QtWidgets.QLabel("NONE")
-        self.setCentralWidget(widget)
+        self.setCentralWidget(self.windowWidget)
         self.setGeometry(600, 100, 400, 200)
 
         fields_section = QtWidgets.QWidget(None)
@@ -139,9 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fieldlayout.addRow(updateBtn)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(menubar, 0, 0)
-        layout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.displayNetwork, 2, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget()
         layout.addWidget(self.labelStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
@@ -150,7 +144,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.openfile, 3, 4)
         layout.addWidget(self.table, 4, 4)
         layout.addWidget(fields_section, 4, 0)
-        widget.setLayout(layout)
+
+        self.saveData = {}
 
     def update_user_fields(self):
         for val in self.saveData['fields'].keys():
