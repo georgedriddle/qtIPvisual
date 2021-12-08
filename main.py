@@ -3,6 +3,16 @@ from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtWidgets import (
+    QWidget,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QHBoxLayout,
+    QCheckBox,
+    QTableView,
+)
 import databuilder
 
 
@@ -73,66 +83,62 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toolbar.addAction(self.aboutAction)
 
         self.setStatusBar(QtWidgets.QStatusBar(self))
-#  Header Controls
-        self.labelNetwork = QtWidgets.QLabel("Network to Visualze")
-        self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
+#  Header Widget
+        self.headerWidget = QWidget()
+        self.labelNetwork = QLabel("Network to Visualize", self.headerWidget)
+        self.displayNetwork = QLineEdit("192.168.1.0/24", self.headerWidget)
+        self.displayNetwork.setMaximumWidth(110)
         self.displayNetwork.setMaxLength(18)
-        self.displayNetwork.setMaximumWidth(125)
         self.displayNetwork.setValidator(self.cidrvalid)
 
-        self.labelStart = QtWidgets.QLabel("Start")
-        self.displayStart = QtWidgets.QLineEdit("24")
+        self.labelStart = QLabel("Start", self.headerWidget)
+
+        self.displayStart = QLineEdit("24", self.headerWidget)
         self.displayStart.setMaxLength(2)
         self.displayStart.setMaximumWidth(25)
         self.displayStart.setValidator(self.zero32)
-
-        self.labelEnd = QtWidgets.QLabel("end")
-        self.displayEnd = QtWidgets.QLineEdit("26")
+        self.labelEnd = QLabel("end", self.headerWidget)
+        self.displayEnd = QLineEdit("26", self.headerWidget)
         self.displayEnd.setMaximumWidth(25)
         self.displayEnd.setMaxLength(2)
         self.displayEnd.setValidator(self.zero32)
-# Header Layout
-        self.headerWidget = QtWidgets.QWidget()
-        self.headerWidgetLayout = QtWidgets.QGridLayout()
-    #Row 0
-        self.headerWidgetLayout.addWidget(
-              self.labelNetwork, 0, 0, Qt.AlignmentFlag.AlignLeft)
-        self.headerWidgetLayout.addWidget(
-              self.labelStart, 0, 1, Qt.AlignmentFlag.AlignLeft)
-        self.headerWidgetLayout.addWidget(
-            self.labelEnd, 0, 2, Qt.AlignmentFlag.AlignLeft)
-    #Row 1
-        self.headerWidgetLayout.addWidget(    
-              self.displayNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
-        self.headerWidgetLayout.addWidget(
-              self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
-        self.headerWidgetLayout.addWidget(
-              self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
-        
-        self.windowWidget = QtWidgets.QWidget()
-        self.windowWidgetLayout = QtWidgets.QVBoxLayout()
-        self.windowWidgetLayout.addLayout(self.headerWidgetLayout)
 
-        self.table = QtWidgets.QTableView()
-        self.table.clicked.connect(self.showSelection)
-
-        self.btnGenerate = QtWidgets.QPushButton("Generate")
+        self.btnGenerate = QPushButton("Generate", self.headerWidget)
         self.btnGenerate.setMaximumWidth(100)
         self.btnGenerate.clicked.connect(self.generate)
 
-        self.openfile = QtWidgets.QLabel("NONE")
+        self.labelNetwork.move(0,5)
+        self.labelStart.move(120, 5)
+        self.labelEnd.move(150, 5)
+        self.displayNetwork.move(0,20)
+        self.displayStart.move(120, 20)
+        self.displayEnd.move(150, 20)
+        self.btnGenerate.move(10, 50)
+        
+        self.windowWidget = QWidget()
+        self.windowWidgetLayout = QVBoxLayout()
+        self.windowWidget.setLayout(self.windowWidgetLayout)
+        
+        self.setCentralWidget(self.windowWidget)
+
+        self.table = QTableView()
+        self.table.clicked.connect(self.showSelection)
+
+        
+
+        self.openfile = QLabel("NONE")
         self.setCentralWidget(self.windowWidget)
         self.setGeometry(600, 100, 400, 200)
 
-        fields_section = QtWidgets.QWidget(None)
+        fields_section = QWidget()
         fields_section.setMaximumWidth(300)
         fieldlayout = QtWidgets.QFormLayout()
         fields_section.setLayout(fieldlayout)
 
-        self.ufields = {'key': QtWidgets.QLineEdit()}
+        self.ufields = {'key': QLineEdit()}
         self.loadSaveData()
         deleteIcon = QtGui.QIcon("icons/cross.png")
-        deleteBtn = QtWidgets.QPushButton(deleteIcon,"Delete")
+        deleteBtn = QPushButton(deleteIcon,"Delete")
         deleteBtn.setMaximumWidth(65)
         deleteBtn.clicked.connect(self.delRecord)
         fieldlayout.addRow(deleteBtn)
@@ -140,24 +146,27 @@ class MainWindow(QtWidgets.QMainWindow):
         for key, value in self.ufields.items():
             fieldlayout.addRow(key, value)
         UpdateIcon = QtGui.QIcon("icons/block--arrow.png")
-        updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
+        updateBtn = QPushButton(UpdateIcon, "Update")
         updateBtn.clicked.connect(self.updateFormFields)
         fieldlayout.addRow(updateBtn)
 
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.btnGenerate, 3, 0)
-        layout.addWidget(self.openfile, 3, 4)
-        layout.addWidget(self.table, 4, 4)
-        layout.addWidget(fields_section, 4, 0)
+        self.coreWidget = QWidget()
+        self.corelayout = QHBoxLayout()
+        self.coreWidget.setLayout(self.corelayout)
+        self.corelayout.addWidget(fields_section)
+
+        self.windowWidgetLayout.addWidget(self.headerWidget)
+        self.windowWidgetLayout.addWidget(self.coreWidget)
+        #self.windowWidgetLayout.addWidget(self.table)
 
         self.saveData = {}
 
     def update_user_fields(self):
         for val in self.saveData['fields'].keys():
             if self.saveData['fields'][val]["controlType"] == "lineEdit":
-                self.ufields[val] = QtWidgets.QLineEdit()
+                self.ufields[val] = QLineEdit()
             if self.saveData['fields'][val]['controlType'] == 'checkbox':
-                self.ufields[val] = QtWidgets.QCheckBox()
+                self.ufields[val] = QCheckBox()
 
     def loadSaveData(self):
         ''' 1. Loads file into saveData dictionary'''
@@ -199,10 +208,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def clearUfileds(self):
         for key in self.ufields.keys():
-            if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
+            if type(self.ufields.get(key)) == QLineEdit:
                 self.ufields[key].setText('')
 
-            elif type(self.saveData['fields'].get(key)) == QtWidgets.QCheckBox:
+            elif type(self.saveData['fields'].get(key)) == QCheckBox:
                     self.ufields[key] == Qt.CheckState.Unchecked
 
 
@@ -215,12 +224,12 @@ class MainWindow(QtWidgets.QMainWindow):
         data = self.saveData.get(selected_cidr)
         if data:
             for name in data:
-                if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
+                if type(self.ufields.get(name)) == QLineEdit:
                     text = data.get(name)
                     self.ufields[name].setText(text)
                 else:
                     self.ufields[name].setText('')
-                if type(self.ufields.get(name)) == QtWidgets.QCheckBox:
+                if type(self.ufields.get(name)) == QCheckBox:
                     val = data.get(name)
                     if val == 'True':
                         self.ufields[name].setCheckState(Qt.CheckState.Checked)

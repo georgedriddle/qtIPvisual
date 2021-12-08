@@ -1,8 +1,11 @@
-widget
-    layout = QVbox , name = layout.
-        header , QHbox
-        
-    layout = Q
-    fields_section
-        layout = QFormLayout, name= fieldlayout
-            
+headerWidget
+    move() with parent
+coreWidget
+    hbox()
+        Fields_section
+        Display table
+
+windowWidget
+    Vboxlayout
+        headerWidget
+        coreWidget
