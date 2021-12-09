@@ -260,7 +260,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                     if colorWeight > fillweight:
                                         fillweight = colorWeight
                                         cell['color'] = fillcolor
-
     def generate(self):
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
