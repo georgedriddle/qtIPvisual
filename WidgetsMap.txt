@@ -5,4 +5,10 @@ widget
     layout = Q
     fields_section
         layout = QFormLayout, name= fieldlayout
-            
+
+|             |           |         |      |
+| Network lbl | start lbl | end lbl |      |
+| txt network | txt start | txt end |      |
+| Generate    |           |         | path |
+| Fields      | fields    | fields  | data |
+|             |           |         |      |

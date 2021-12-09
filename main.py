@@ -93,12 +93,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table.clicked.connect(self.showSelection)
 
         self.labelNetwork = QtWidgets.QLabel("Network to Visualze")
+        self.labelNetwork.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
+        self.displayNetwork.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.displayNetwork.setMaxLength(18)
         self.displayNetwork.setMaximumWidth(125)
         self.displayNetwork.setValidator(self.cidrRegex)
 
         self.labelStart = QtWidgets.QLabel("Start")
+        self.labelStart.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.displayStart = QtWidgets.QLineEdit("24")
         self.displayStart.setMaxLength(2)
         self.displayStart.setMaximumWidth(25)
@@ -139,17 +142,17 @@ class MainWindow(QtWidgets.QMainWindow):
         fieldlayout.addRow(updateBtn)
 
         layout = QtWidgets.QGridLayout()
-        layout.addWidget(menubar, 0, 0)
+        #layout.addWidget(menubar, 0, 0)
         layout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.displayNetwork, 2, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.labelStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.btnGenerate, 3, 0)
+        layout.addWidget(self.btnGenerate, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.openfile, 3, 4)
         layout.addWidget(self.table, 4, 4)
-        layout.addWidget(fields_section, 4, 0)
+        layout.addWidget(fields_section, 4, 0, 1, 3)
         widget.setLayout(layout)
 
     def update_user_fields(self):
