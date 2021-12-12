@@ -123,24 +123,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         fields_section = QtWidgets.QWidget(None)
         fields_section.setMaximumWidth(300)
-        fieldlayout = QtWidgets.QFormLayout()
-        fields_section.setLayout(fieldlayout)
+        self.fieldlayout = QtWidgets.QFormLayout()
+        fields_section.setLayout(self.fieldlayout)
 
-        self.ufields = {'key': QtWidgets.QLineEdit()}
-        self.loadSaveData()
-        deleteIcon = QtGui.QIcon("icons/cross.png")
-        deleteBtn = QtWidgets.QPushButton(deleteIcon,"Delete")
-        deleteBtn.setMaximumWidth(65)
-        deleteBtn.clicked.connect(self.delRecord)
-        fieldlayout.addRow(deleteBtn)
-        self.update_user_fields()
-        for key, value in self.ufields.items():
-            fieldlayout.addRow(key, value)
         UpdateIcon = QtGui.QIcon("icons/block--arrow.png")
         updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
         updateBtn.clicked.connect(self.updateFormFields)
-        fieldlayout.addRow(updateBtn)
-
+        self.fieldlayout.addRow(updateBtn)
         layout = QtWidgets.QGridLayout()
         #layout.addWidget(menubar, 0, 0)
         layout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
@@ -155,20 +144,40 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(fields_section, 4, 0, 1, 3)
         widget.setLayout(layout)
 
+    def add_user_fields_to_form(self):
+        self.deleteIcon = QtGui.QIcon("icons/cross.png")
+        self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon,"Delete")
+        self.deleteBtn.setMaximumWidth(65)
+        self.deleteBtn.clicked.connect(self.delRecord)
+        self.fieldlayout.addRow(self.deleteBtn)
+        self.ufields = {'key': QtWidgets.QLineEdit()}
+
+        self.update_user_fields()
+        for key, value in self.ufields.items():
+            self.fieldlayout.addRow(key, value)
+
     def update_user_fields(self):
         for val in self.saveData['fields'].keys():
             if self.saveData['fields'][val]["controlType"] == "lineEdit":
                 self.ufields[val] = QtWidgets.QLineEdit()
             if self.saveData['fields'][val]['controlType'] == 'checkbox':
                 self.ufields[val] = QtWidgets.QCheckBox()
+    
+    def clear_user_layout(self):
+        rowCount = self.fieldlayout.rowCount()
+        print(f'there are {rowCount} rows to delete')
+        for x in range(rowCount - 1, 0, -1):
+            self.fieldlayout.removeRow(x)
 
-    def loadSaveData(self):
+    def loadSaveData(self): #make this return value, better to read above.
         ''' 1. Loads file into saveData dictionary'''
+        self.clear_user_layout()
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
         if file[0]:
             with open(file[0], "r") as F1:
                 self.saveData = json.load(F1)
             self.openfile.setText(file[0])
+            self.add_user_fields_to_form()
         else:
             self.statusTip = "Failed to Load File"
 
