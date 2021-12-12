@@ -1,11 +1,14 @@
-headerWidget
-    move() with parent
-coreWidget
-    hbox()
-        Fields_section
-        Display table
+widget
+    layout = QVbox , name = layout.
+        header , QHbox
+        
+    layout = Q
+    fields_section
+        layout = QFormLayout, name= fieldlayout
 
-windowWidget
-    Vboxlayout
-        headerWidget
-        coreWidget
+|             |           |         |      |
+| Network lbl | start lbl | end lbl |      |
+| txt network | txt start | txt end |      |
+| Generate    |           |         | path |
+| Fields      | fields    | fields  | data |
+|             |           |         |      |

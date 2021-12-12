@@ -83,17 +83,37 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toolbar.addAction(self.aboutAction)
 
         self.setStatusBar(QtWidgets.QStatusBar(self))
+<<<<<<< HEAD
 #  Header Widget
         self.headerWidget = QWidget()
         self.labelNetwork = QLabel("Network to Visualize", self.headerWidget)
         self.displayNetwork = QLineEdit("192.168.1.0/24", self.headerWidget)
         self.displayNetwork.setMaximumWidth(110)
+=======
+        self.saveData = {}
+        self.filebtn = QtWidgets.QPushButton("Open File")
+        self.filebtn.clicked.connect(self.loadSaveData)
+        widget = QtWidgets.QWidget()
+        self.table = QtWidgets.QTableView()
+        self.table.clicked.connect(self.showSelection)
+
+        self.labelNetwork = QtWidgets.QLabel("Network to Visualze")
+        self.labelNetwork.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
+        self.displayNetwork.setAlignment(Qt.AlignmentFlag.AlignLeft)
+>>>>>>> dev2
         self.displayNetwork.setMaxLength(18)
         self.displayNetwork.setValidator(self.cidrvalid)
 
         self.labelStart = QLabel("Start", self.headerWidget)
 
+<<<<<<< HEAD
         self.displayStart = QLineEdit("24", self.headerWidget)
+=======
+        self.labelStart = QtWidgets.QLabel("Start")
+        self.labelStart.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.displayStart = QtWidgets.QLineEdit("24")
+>>>>>>> dev2
         self.displayStart.setMaxLength(2)
         self.displayStart.setMaximumWidth(25)
         self.displayStart.setValidator(self.zero32)
@@ -132,9 +152,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         fields_section = QWidget()
         fields_section.setMaximumWidth(300)
-        fieldlayout = QtWidgets.QFormLayout()
-        fields_section.setLayout(fieldlayout)
+        self.fieldlayout = QtWidgets.QFormLayout()
+        fields_section.setLayout(self.fieldlayout)
 
+<<<<<<< HEAD
         self.ufields = {'key': QLineEdit()}
         self.loadSaveData()
         deleteIcon = QtGui.QIcon("icons/cross.png")
@@ -145,9 +166,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_user_fields()
         for key, value in self.ufields.items():
             fieldlayout.addRow(key, value)
+=======
+>>>>>>> dev2
         UpdateIcon = QtGui.QIcon("icons/block--arrow.png")
         updateBtn = QPushButton(UpdateIcon, "Update")
         updateBtn.clicked.connect(self.updateFormFields)
+<<<<<<< HEAD
         fieldlayout.addRow(updateBtn)
 
         self.coreWidget = QWidget()
@@ -160,21 +184,63 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.windowWidgetLayout.addWidget(self.table)
 
         self.saveData = {}
+=======
+        self.fieldlayout.addRow(updateBtn)
+        layout = QtWidgets.QGridLayout()
+        #layout.addWidget(menubar, 0, 0)
+        layout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayNetwork, 2, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.labelStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayStart, 2, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.btnGenerate, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.openfile, 3, 4)
+        layout.addWidget(self.table, 4, 4)
+        layout.addWidget(fields_section, 4, 0, 1, 3)
+        widget.setLayout(layout)
+>>>>>>> dev2
+
+    def add_user_fields_to_form(self):
+        self.deleteIcon = QtGui.QIcon("icons/cross.png")
+        self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon,"Delete")
+        self.deleteBtn.setMaximumWidth(65)
+        self.deleteBtn.clicked.connect(self.delRecord)
+        self.fieldlayout.addRow(self.deleteBtn)
+        self.ufields = {'key': QtWidgets.QLineEdit()}
+
+        self.update_user_fields()
+        for key, value in self.ufields.items():
+            self.fieldlayout.addRow(key, value)
 
     def update_user_fields(self):
         for val in self.saveData['fields'].keys():
             if self.saveData['fields'][val]["controlType"] == "lineEdit":
                 self.ufields[val] = QLineEdit()
             if self.saveData['fields'][val]['controlType'] == 'checkbox':
+<<<<<<< HEAD
                 self.ufields[val] = QCheckBox()
 
     def loadSaveData(self):
+=======
+                self.ufields[val] = QtWidgets.QCheckBox()
+    
+    def clear_user_layout(self):
+        rowCount = self.fieldlayout.rowCount()
+        print(f'there are {rowCount} rows to delete')
+        for x in range(rowCount - 1, 0, -1):
+            self.fieldlayout.removeRow(x)
+
+    def loadSaveData(self): #make this return value, better to read above.
+>>>>>>> dev2
         ''' 1. Loads file into saveData dictionary'''
+        self.clear_user_layout()
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
         if file[0]:
             with open(file[0], "r") as F1:
                 self.saveData = json.load(F1)
             self.openfile.setText(file[0])
+            self.add_user_fields_to_form()
         else:
             self.statusTip = "Failed to Load File"
 
