@@ -9,9 +9,11 @@ Fields
         Dynamically add new field if discovered.
             Run through dictionary once to complete a discovery.
     GUI based field editor.
-    Make actions a menu at top of field section. Update & Delete.
 
 General
+    Dirty clean state in file name.
+        Unsaved changes warning upon exit.
+    Have a default user fields with name field.
     Print function
     History logging off all actions taken, updates made. Eventually inlcude some sort of replay or undue option to put back or remove a previous update.
     Auto Save, make it a user selectable option.
@@ -23,7 +25,7 @@ Fix layout, dedicated widgets for each section
     Data Display
 
 BUGS:
-| MAJOR | Fields do not get updated on load, will crash the program while running.                                                                        |
+
 
 Updates
 | What                                        | When     |
@@ -34,5 +36,7 @@ Updates
 | Display name of currently opened file       | 11/24/21 |
 | Fixed wrongful coloring issue               | 11/26/21 |
 | Color Weights implemented                   | 11/27/21 |
+| Dynamic Fields Upon Load                    | 12/11/21 |
+| Moved colorization to its own function      | 12/12/21 |
 |                                             |          |
 

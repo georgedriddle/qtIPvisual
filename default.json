@@ -1,0 +1,9 @@
+{
+    "fields": {
+        "Name": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "show": "True"
+        }
+    }
+}

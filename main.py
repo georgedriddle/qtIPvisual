@@ -126,12 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fieldlayout = QtWidgets.QFormLayout()
         fields_section.setLayout(self.fieldlayout)
 
-        UpdateIcon = QtGui.QIcon("icons/block--arrow.png")
-        updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
-        updateBtn.clicked.connect(self.updateFormFields)
-        self.fieldlayout.addRow(updateBtn)
         layout = QtWidgets.QGridLayout()
-        #layout.addWidget(menubar, 0, 0)
         layout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.displayNetwork, 2, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.labelStart, 1, 1, Qt.AlignmentFlag.AlignLeft)
@@ -144,17 +139,34 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(fields_section, 4, 0, 1, 3)
         widget.setLayout(layout)
 
+        self.saveData= {
+            "fields": {
+                "Name": {
+                    "controlType": "lineEdit",
+                    "colorMap": {},
+                    "show": "True"
+                }
+            }
+        }
+        self.add_user_fields_to_form()
+
     def add_user_fields_to_form(self):
         self.deleteIcon = QtGui.QIcon("icons/cross.png")
         self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon,"Delete")
         self.deleteBtn.setMaximumWidth(65)
         self.deleteBtn.clicked.connect(self.delRecord)
         self.fieldlayout.addRow(self.deleteBtn)
+
         self.ufields = {'key': QtWidgets.QLineEdit()}
 
         self.update_user_fields()
         for key, value in self.ufields.items():
             self.fieldlayout.addRow(key, value)
+        
+        UpdateIcon = QtGui.QIcon("icons/block--arrow.png")
+        updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
+        updateBtn.clicked.connect(self.updateFormFields)
+        self.fieldlayout.addRow(updateBtn)
 
     def update_user_fields(self):
         for val in self.saveData['fields'].keys():
@@ -165,8 +177,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def clear_user_layout(self):
         rowCount = self.fieldlayout.rowCount()
-        print(f'there are {rowCount} rows to delete')
-        for x in range(rowCount - 1, 0, -1):
+        print(f'there are {rowCount} to clean up')
+        for x in range(rowCount -1, -1, -1):
             self.fieldlayout.removeRow(x)
 
     def loadSaveData(self): #make this return value, better to read above.
@@ -178,6 +190,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.saveData = json.load(F1)
             self.openfile.setText(file[0])
             self.add_user_fields_to_form()
+# self.saveData['fields'] set to a variable use it bunch of times. Easier to read!
         else:
             self.statusTip = "Failed to Load File"
 
@@ -239,30 +252,37 @@ class MainWindow(QtWidgets.QMainWindow):
                     else:
                         self.ufields[name].setCheckState(
                             Qt.CheckState.Unchecked)
+    
+    def setFillcolor(self,
+                     property_in: str,
+                     value_in: str,
+                     currentColor: str,
+                     currentWeight: int) -> tuple:
+        """ Updates color and weight values if greater than current"""
+        color = self.saveData['fields'][property_in]['colorMap'].get(value_in)
+        weight = self.saveData['fields'][property_in].get("colorWeight")
+        if color and (weight > currentWeight):
+            return (color, weight)
+        else:
+            return (currentColor, currentWeight)
 
-    def merge(self, tableIn, records):
+
+    def merge(self):
         cidrDetails = None
-        for row in tableIn:
+        for row in self.data:
             for cell in row:
                 fillcolor = ''
                 fillweight = 0
-                colorWeight = 0
-                cidr = cell.get('network')
-                if cidr:
-                    cidrDetails = records.get(cidr)  # SaveData records.
-                    if cidrDetails:
+                if cidr := cell.get('network'):
+                    if cidrDetails := self.saveData.get(cidr):
                         for property, value in cidrDetails.items():
                             if self.saveData['fields'][property]['show'] == 'True':
                                 cell[property] = value
-                                if self.saveData[cidr].get(property):
-                                    fillcolor = self.saveData['fields'][property]['colorMap'].get(value)
-                                    colorWeight = self.saveData['fields'][property].get("colorWeight")
-                                    if colorWeight == None:
-                                        colorWeight = 0
-                                    if colorWeight > fillweight:
-                                        fillweight = colorWeight
-                                        cell['color'] = fillcolor
-
+                                cell['color'], fillweight = self.setFillcolor(
+                                                              property,
+                                                              value,
+                                                              fillcolor,
+                                                              fillweight)
     def generate(self):
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
@@ -271,7 +291,7 @@ class MainWindow(QtWidgets.QMainWindow):
         columnCount = end - start + 1
         rowCount = 2 ** (end - net.prefixlen)
         self.data = databuilder.buildDisplayList(net, start, end)
-        self.merge(self.data, self.saveData)
+        self.merge()
         self.model = TableModel(self.data)
         self.table.setModel(self.model)
         self.table.clearSpans()
