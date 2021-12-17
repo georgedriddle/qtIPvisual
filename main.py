@@ -1,4 +1,5 @@
 import json
+import re
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6 import QtGui
@@ -23,7 +24,7 @@ class TableModel(QtCore.QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             out = ''
             for key, value in item.items():
-                if key not in ['spansize']:
+                if key not in ['spansize', 'color']:
                     if key == 'network':
                         out += f'{value}\n'
                     else:
@@ -143,8 +144,11 @@ class MainWindow(QtWidgets.QMainWindow):
             "fields": {
                 "Name": {
                     "controlType": "lineEdit",
-                    "colorMap": {},
-                    "show": "True"
+                    "colorMap": {
+                        '.*': 'green'
+                    },
+                    "colorWeight": 1,
+                    "show": "True",
                 }
             }
         }
@@ -259,10 +263,15 @@ class MainWindow(QtWidgets.QMainWindow):
                      currentColor: str,
                      currentWeight: int) -> tuple:
         """ Updates color and weight values if greater than current"""
-        color = self.saveData['fields'][property_in]['colorMap'].get(value_in)
-        weight = self.saveData['fields'][property_in].get("colorWeight")
-        if color and (weight > currentWeight):
-            return (color, weight)
+        color = ''
+        weight = 0
+        colormap = self.saveData['fields'][property_in]['colorMap']
+        for item in colormap.keys():
+            if re.match(fr'{item}', value_in):
+                color = self.saveData['fields'][property_in]['colorMap'].get(item)
+                weight = self.saveData['fields'][property_in].get("colorWeight")
+            if color and (weight > currentWeight):
+                return (color, weight)
         else:
             return (currentColor, currentWeight)
 
