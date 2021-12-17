@@ -1,7 +1,6 @@
 Coloring
     pattern matching for rules
     Colormap off of checkbox state.
-    Show has to be True for coloring to work, kind of the opposite of what I want.
     Gui based color chooser and priority setter.
 
 Fields
@@ -11,9 +10,9 @@ Fields
     GUI based field editor.
 
 General
+    New button.
     Dirty clean state in file name.
         Unsaved changes warning upon exit.
-    Have a default user fields with name field.
     Print function
     History logging off all actions taken, updates made. Eventually inlcude some sort of replay or undue option to put back or remove a previous update.
     Auto Save, make it a user selectable option.
@@ -38,5 +37,6 @@ Updates
 | Color Weights implemented                   | 11/27/21 |
 | Dynamic Fields Upon Load                    | 12/11/21 |
 | Moved colorization to its own function      | 12/12/21 |
+| Default user field set                      | 12/14/21 |
 |                                             |          |
 
