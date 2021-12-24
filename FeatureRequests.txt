@@ -1,5 +1,4 @@
 Coloring
-    pattern matching for rules
     Colormap off of checkbox state.
     Gui based color chooser and priority setter.
 
@@ -38,5 +37,6 @@ Updates
 | Dynamic Fields Upon Load                    | 12/11/21 |
 | Moved colorization to its own function      | 12/12/21 |
 | Default user field set                      | 12/14/21 |
+| Regular expression matching on line edits   | 12/16/21 |
 |                                             |          |
 

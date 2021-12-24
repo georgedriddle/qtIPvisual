@@ -1,5 +1,6 @@
 import json
 import re
+import logging
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6 import QtGui
@@ -11,7 +12,7 @@ from PyQt6.QtGui import (
     QRegularExpressionValidator,
 )
 import databuilder
-
+logging.basicConfig(level=logging.DEBUG)
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
@@ -26,6 +27,7 @@ class TableModel(QtCore.QAbstractTableModel):
             for key, value in item.items():
                 if key not in ['spansize', 'color']:
                     if key == 'network':
+                        logging.debug(f'Network is {value}')
                         out += f'{value}\n'
                     else:
                         out += f'{key}: {value}\n'
@@ -34,7 +36,9 @@ class TableModel(QtCore.QAbstractTableModel):
         if role == Qt.ItemDataRole.BackgroundRole:
             value = self._data[index.row()][index.column()]
             if item.get('color'):
-                return QtGui.QColor(item.get('color'))
+                clr = item.get('color')
+                logging.debug(f'color = {clr}')
+                return QtGui.QColor(clr)
 
     def rowCount(self, index):
         return len(self._data)
@@ -263,6 +267,9 @@ class MainWindow(QtWidgets.QMainWindow):
                      currentColor: str,
                      currentWeight: int) -> tuple:
         """ Updates color and weight values if greater than current"""
+        logging.debug(f'inbound color and weight is {currentColor} {currentWeight}')
+        logging.debug(f'Getting color for {property_in}')
+        
         color = ''
         weight = 0
         colormap = self.saveData['fields'][property_in]['colorMap']
@@ -271,9 +278,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 color = self.saveData['fields'][property_in]['colorMap'].get(item)
                 weight = self.saveData['fields'][property_in].get("colorWeight")
             if color and (weight > currentWeight):
+                logging.debug(f'color and weight are now {color} {weight}')
                 return (color, weight)
         else:
+            logging.debug(f'color and weight remain {currentColor} {weight}')
             return (currentColor, currentWeight)
+
 
 
     def merge(self):
@@ -287,10 +297,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         for property, value in cidrDetails.items():
                             if self.saveData['fields'][property]['show'] == 'True':
                                 cell[property] = value
+                                logging.debug(f'getting fillcolor for {property} {value}')
                                 cell['color'], fillweight = self.setFillcolor(
                                                               property,
                                                               value,
-                                                              fillcolor,
+                                                              cell.get('color'),
                                                               fillweight)
     def generate(self):
         start = int(self.displayStart.text())
