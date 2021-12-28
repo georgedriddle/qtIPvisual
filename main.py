@@ -12,7 +12,7 @@ from PyQt6.QtGui import (
     QRegularExpressionValidator,
 )
 import databuilder
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
@@ -40,8 +40,10 @@ class TableModel(QtCore.QAbstractTableModel):
                 logging.debug(f'color = {clr}')
                 return QtGui.QColor(clr)
 
+
     def rowCount(self, index):
         return len(self._data)
+
 
     def columnCount(self, index):
         return len(self._data[0])
@@ -71,6 +73,11 @@ class MainWindow(QtWidgets.QMainWindow):
         saveAction.setStatusTip("save data to file")
         saveAction.triggered.connect(self.save)
 
+        saveAsicon = QtGui.QIcon("icons/disk--arrow.png")
+        saveAsAction = QtGui.QAction(saveAsicon, "Save As", self)
+        saveAsAction.setStatusTip("Save as a New File")
+        saveAsAction.triggered.connect(self.saveAs)
+
         printIcon = QtGui.QIcon("icons/printer.png")
         printAction = QtGui.QAction(printIcon, "Print", self)
         printAction.setStatusTip("Not Implemented")
@@ -80,6 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         toolbar.addAction(loadAction)
         toolbar.addAction(saveAction)
+        toolbar.addAction(saveAsAction)
         toolbar.addAction(printAction)
         toolbar.addAction(aboutAction)
 
@@ -185,7 +193,6 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def clear_user_layout(self):
         rowCount = self.fieldlayout.rowCount()
-        print(f'there are {rowCount} to clean up')
         for x in range(rowCount -1, -1, -1):
             self.fieldlayout.removeRow(x)
 
@@ -224,11 +231,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clearUfileds()
 
 
-    def save(self):
+    def write(self, name):
+        with open(name, "w") as F1:
+            self.openfile.setText(name)
+            json.dump(self.saveData, F1, indent=4)
+
+
+    def saveAs(self):
         fileToSave = QtWidgets.QFileDialog.getSaveFileName(self, "WHERE?")
         if fileToSave[0]:
-            with open(fileToSave[0], "w") as F1:
-                json.dump(self.saveData, F1, indent=4)
+            self.write(fileToSave[0])
+
+
+    def save(self):
+        if self.openfile.text() == 'NONE':
+            self.saveAs()
+        else:
+            self.write(self.openfile.text())
+
 
     def clearUfileds(self):
         for key in self.ufields.keys():
