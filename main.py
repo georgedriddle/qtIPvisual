@@ -63,6 +63,9 @@ class MainWindow(QtWidgets.QMainWindow):
         toolbar = QtWidgets.QToolBar("Tool Bar Title")
         self.addToolBar(toolbar)
 
+        self.autoSave = True
+        self.auto_update = True
+
         loadIcon = QtGui.QIcon("icons/database--plus.png")
         loadAction = QtGui.QAction(loadIcon, "Load", self)
         loadAction.setStatusTip("Load Data!")
@@ -85,10 +88,16 @@ class MainWindow(QtWidgets.QMainWindow):
         aboutAction = QtGui.QAction(aboutIcon, "About", self)
         aboutAction.setStatusTip("Not Implemented")
 
+        settingsIcon = QtGui.QIcon("icons/wheel.png")
+        settingsAction = QtGui.QAction(settingsIcon, "Settings", self)
+        settingsAction.setStatusTip("Settings")
+        settingsAction.triggered.connect(self.settings)
+
         toolbar.addAction(loadAction)
         toolbar.addAction(saveAction)
         toolbar.addAction(saveAsAction)
         toolbar.addAction(printAction)
+        toolbar.addAction(settingsAction)
         toolbar.addAction(aboutAction)
 
         printAction = QtGui.QAction("Print It!", self)
@@ -188,6 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for val in self.saveData['fields'].keys():
             if self.saveData['fields'][val]["controlType"] == "lineEdit":
                 self.ufields[val] = QtWidgets.QLineEdit()
+                self.ufields[val].editingFinished.connect(self.autoUpdate)
             if self.saveData['fields'][val]['controlType'] == 'checkbox':
                 self.ufields[val] = QtWidgets.QCheckBox()
     
@@ -236,6 +246,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.openfile.setText(name)
             json.dump(self.saveData, F1, indent=4)
 
+    def autoUpdate(self):
+        if self.auto_update:
+            self.updateFormFields()
 
     def saveAs(self):
         fileToSave = QtWidgets.QFileDialog.getSaveFileName(self, "WHERE?")
@@ -248,6 +261,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.saveAs()
         else:
             self.write(self.openfile.text())
+
+    def settings(self):
+        print("Cool stuff comming soon")
 
 
     def clearUfileds(self):
