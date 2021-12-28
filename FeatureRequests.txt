@@ -3,7 +3,7 @@ Coloring
     Gui based color chooser and priority setter.
 
 Fields
-    More robust field handeling.
+    More robust field handeling in general.
         Dynamically add new field if discovered.
             Run through dictionary once to complete a discovery.
     GUI based field editor.
@@ -23,20 +23,4 @@ Fix layout, dedicated widgets for each section
     Data Display
 
 BUGS:
-
-
-Updates
-| What                                        | When     |
-| ------------------------------------------- | -------- |
-| Save Button, saves correctly                | 11/19/21 |
-| Toobar icons for Load & Save                | 11/23/21 |
-| Got rid of "time to saveData status message | 11/24/21 |
-| Display name of currently opened file       | 11/24/21 |
-| Fixed wrongful coloring issue               | 11/26/21 |
-| Color Weights implemented                   | 11/27/21 |
-| Dynamic Fields Upon Load                    | 12/11/21 |
-| Moved colorization to its own function      | 12/12/21 |
-| Default user field set                      | 12/14/21 |
-| Regular expression matching on line edits   | 12/16/21 |
-|                                             |          |
-
+Need update file name on save.
