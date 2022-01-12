@@ -3,16 +3,18 @@ import re
 import logging
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
-from PyQt6 import QtGui
 from PyQt6.QtCore import Qt, QRegularExpression
 from PyQt6.QtGui import (
     QAction,
     QIcon,
+    QColor,
     QIntValidator,
     QRegularExpressionValidator,
 )
 import databuilder
+
 logging.basicConfig(level=logging.INFO)
+
 
 class TableModel(QtCore.QAbstractTableModel):
     def __init__(self, data):
@@ -23,27 +25,25 @@ class TableModel(QtCore.QAbstractTableModel):
         item = self._data[index.row()][index.column()]
 
         if role == Qt.ItemDataRole.DisplayRole:
-            out = ''
+            out = ""
             for key, value in item.items():
-                if key not in ['spansize', 'color']:
-                    if key == 'network':
-                        logging.debug(f'Network is {value}')
-                        out += f'{value}\n'
+                if key not in ["spansize", "color"]:
+                    if key == "network":
+                        logging.debug(f"Network is {value}")
+                        out += f"{value}\n"
                     else:
-                        out += f'{key}: {value}\n'
+                        out += f"{key}: {value}\n"
             return out
 
         if role == Qt.ItemDataRole.BackgroundRole:
             value = self._data[index.row()][index.column()]
-            if item.get('color'):
-                clr = item.get('color')
-                logging.debug(f'color = {clr}')
-                return QtGui.QColor(clr)
-
+            if item.get("color"):
+                clr = item.get("color")
+                logging.debug(f"color = {clr}")
+                return QColor(clr)
 
     def rowCount(self, index):
         return len(self._data)
-
 
     def columnCount(self, index):
         return len(self._data[0])
@@ -51,9 +51,10 @@ class TableModel(QtCore.QAbstractTableModel):
 
 class MainWindow(QtWidgets.QMainWindow):
     matchcidr = QRegularExpression(
-            r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
-        )
+        r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
+    )
     cidrRegex = QRegularExpressionValidator(QRegularExpression(matchcidr))
+
     def __init__(self):
         super().__init__()
         self.zero32 = QIntValidator(0, 32)
@@ -66,30 +67,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.autoSave = True
         self.auto_update = True
 
-        loadIcon = QtGui.QIcon("icons/database--plus.png")
-        loadAction = QtGui.QAction(loadIcon, "Load", self)
+        loadIcon = QIcon("icons/database--plus.png")
+        loadAction = QAction(loadIcon, "Load", self)
         loadAction.setStatusTip("Load Data!")
         loadAction.triggered.connect(self.loadSaveData)
 
-        saveicon = QtGui.QIcon("icons/disk-return.png")
-        saveAction = QtGui.QAction(saveicon, "Save", self)
+        saveicon = QIcon("icons/disk-return.png")
+        saveAction = QAction(saveicon, "Save", self)
         saveAction.setStatusTip("save data to file")
         saveAction.triggered.connect(self.save)
 
-        saveAsicon = QtGui.QIcon("icons/disk--arrow.png")
-        saveAsAction = QtGui.QAction(saveAsicon, "Save As", self)
+        saveAsicon = QIcon("icons/disk--arrow.png")
+        saveAsAction = QAction(saveAsicon, "Save As", self)
         saveAsAction.setStatusTip("Save as a New File")
         saveAsAction.triggered.connect(self.saveAs)
 
-        printIcon = QtGui.QIcon("icons/printer.png")
-        printAction = QtGui.QAction(printIcon, "Print", self)
+        printIcon = QIcon("icons/printer.png")
+        printAction = QAction(printIcon, "Print", self)
         printAction.setStatusTip("Not Implemented")
-        aboutIcon = QtGui.QIcon("icons/question-button.png")
-        aboutAction = QtGui.QAction(aboutIcon, "About", self)
+        aboutIcon = QIcon("icons/question-button.png")
+        aboutAction = QAction(aboutIcon, "About", self)
         aboutAction.setStatusTip("Not Implemented")
 
-        settingsIcon = QtGui.QIcon("icons/wheel.png")
-        settingsAction = QtGui.QAction(settingsIcon, "Settings", self)
+        settingsIcon = QIcon("icons/wheel.png")
+        settingsAction = QAction(settingsIcon, "Settings", self)
         settingsAction.setStatusTip("Settings")
         settingsAction.triggered.connect(self.settings)
 
@@ -100,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         toolbar.addAction(settingsAction)
         toolbar.addAction(aboutAction)
 
-        printAction = QtGui.QAction("Print It!", self)
+        printAction = QAction("Print It!", self)
         printAction.triggered.connect(print)
 
         menubar = QtWidgets.QMenuBar()
@@ -161,13 +162,11 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(fields_section, 4, 0, 1, 3)
         widget.setLayout(layout)
 
-        self.saveData= {
+        self.saveData = {
             "fields": {
                 "Name": {
                     "controlType": "lineEdit",
-                    "colorMap": {
-                        '.*': 'green'
-                    },
+                    "colorMap": {".*": "green"},
                     "colorWeight": 1,
                     "show": "True",
                 }
@@ -176,70 +175,90 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_user_fields_to_form()
 
     def add_user_fields_to_form(self):
-        self.deleteIcon = QtGui.QIcon("icons/cross.png")
-        self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon,"Delete")
+        self.deleteIcon = QIcon("icons/cross.png")
+        self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon, "Delete")
         self.deleteBtn.setMaximumWidth(65)
         self.deleteBtn.clicked.connect(self.delRecord)
         self.fieldlayout.addRow(self.deleteBtn)
 
-        self.ufields = {'key': QtWidgets.QLineEdit()}
+        self.ufields = {"key": QtWidgets.QLineEdit()}
 
         self.update_user_fields()
         for key, value in self.ufields.items():
             self.fieldlayout.addRow(key, value)
-        
-        UpdateIcon = QtGui.QIcon("icons/block--arrow.png")
+
+        UpdateIcon = QIcon("icons/block--arrow.png")
         updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
         updateBtn.clicked.connect(self.updateFormFields)
         self.fieldlayout.addRow(updateBtn)
 
     def update_user_fields(self):
-        for val in self.saveData['fields'].keys():
-            if self.saveData['fields'][val]["controlType"] == "lineEdit":
+        for val in self.saveData["fields"].keys():
+            if self.saveData["fields"][val]["controlType"] == "lineEdit":
                 self.ufields[val] = QtWidgets.QLineEdit()
                 self.ufields[val].editingFinished.connect(self.autoUpdate)
-            if self.saveData['fields'][val]['controlType'] == 'checkbox':
+            if self.saveData["fields"][val]["controlType"] == "checkbox":
                 self.ufields[val] = QtWidgets.QCheckBox()
-    
+
     def clear_user_layout(self):
         rowCount = self.fieldlayout.rowCount()
-        for x in range(rowCount -1, -1, -1):
+        for x in range(rowCount - 1, -1, -1):
             self.fieldlayout.removeRow(x)
 
-    def loadSaveData(self): #make this return value, better to read above.
-        ''' 1. Loads file into saveData dictionary'''
+    def checkField(self, cidr: dict):
+        for fieldname in self.saveData[cidr].keys():
+            print(fieldname)
+            if fieldname not in self.saveData["fields"].keys():
+                entry = {
+                    fieldname: {
+                        "controlType": "lineEdit",
+                        "colorMap": {},
+                        "show": "False",
+                    }
+                }
+                self.saveData["fields"].update(entry)
+        print(self.saveData["fields"].keys())
+
+    def findFields(self):
+        """Run through all the subnet entries and find any fields that are not in the
+        fields section"""
+        for cidr in self.saveData.keys():
+            if cidr not in ["fields"]:  # cleaner to re.match on cidr pattern?
+                self.checkField(cidr)
+
+    def loadSaveData(self):  # make this return value, better to read above.
+        """1. Loads file into saveData dictionary"""
         self.clear_user_layout()
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
         if file[0]:
             with open(file[0], "r") as F1:
                 self.saveData = json.load(F1)
             self.openfile.setText(file[0])
+            self.findFields()
             self.add_user_fields_to_form()
-# self.saveData['fields'] set to a variable use it bunch of times. Easier to read!
         else:
             self.statusTip = "Failed to Load File"
 
     def updateFormFields(self):
-        key = self.ufields.get('key').text()  # Get key from field list
+        key = self.ufields.get("key").text()  # Get key from field list
         if key:
             if self.saveData.get(key):  # Check in it exists in save data
                 self.saveData.pop(key)  # Delete it if it does.
             self.saveData[key] = {}
             for ref, val in self.ufields.items():  # terrible var names..
-                if ref == 'key':
+                if ref == "key":
                     ...
-                elif self.saveData['fields'][ref]['controlType'] == 'lineEdit':
+                elif self.saveData["fields"][ref]["controlType"] == "lineEdit":
                     self.saveData[key][ref] = val.text()
-                elif self.saveData['fields'][ref]['controlType'] == 'checkbox':
+                elif self.saveData["fields"][ref]["controlType"] == "checkbox":
                     if val.checkState() == Qt.CheckState.Checked:
                         self.saveData[key][ref] = True
 
     def delRecord(self):
-        key = self.ufields.get('key').text()
+        key = self.ufields.get("key").text()
         if self.saveData.get(key):
-                self.saveData.pop(key)
+            self.saveData.pop(key)
         self.clearUfileds()
-
 
     def write(self, name):
         with open(name, "w") as F1:
@@ -255,32 +274,30 @@ class MainWindow(QtWidgets.QMainWindow):
         if fileToSave[0]:
             self.write(fileToSave[0])
 
-
     def save(self):
-        if self.openfile.text() == 'NONE':
+        if self.openfile.text() == "NONE":
             self.saveAs()
         else:
             self.write(self.openfile.text())
 
     def settings(self):
         print("Cool stuff comming soon")
-
+        # Page 66 on Freda to create a dialog.
 
     def clearUfileds(self):
         for key in self.ufields.keys():
             if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
-                self.ufields[key].setText('')
+                self.ufields[key].setText("")
 
-            elif type(self.saveData['fields'].get(key)) == QtWidgets.QCheckBox:
-                    self.ufields[key] == Qt.CheckState.Unchecked
-
+            elif type(self.saveData["fields"].get(key)) == QtWidgets.QCheckBox:
+                self.ufields[key] == Qt.CheckState.Unchecked
 
     def showSelection(self):
         self.clearUfileds()
         z = self.table.selectedIndexes()[0]
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
         selected_cidr = selectedDisplay.split()[0]
-        self.ufields['key'].setText(selected_cidr)
+        self.ufields["key"].setText(selected_cidr)
         data = self.saveData.get(selected_cidr)
         if data:
             for name in data:
@@ -288,57 +305,53 @@ class MainWindow(QtWidgets.QMainWindow):
                     text = data.get(name)
                     self.ufields[name].setText(text)
                 else:
-                    self.ufields[name].setText('')
+                    self.ufields[name].setText("")
                 if type(self.ufields.get(name)) == QtWidgets.QCheckBox:
                     val = data.get(name)
-                    if val == 'True':
+                    if val == "True":
                         self.ufields[name].setCheckState(Qt.CheckState.Checked)
                     else:
-                        self.ufields[name].setCheckState(
-                            Qt.CheckState.Unchecked)
-    
-    def setFillcolor(self,
-                     property_in: str,
-                     value_in: str,
-                     currentColor: str,
-                     currentWeight: int) -> tuple:
-        """ Updates color and weight values if greater than current"""
-        logging.debug(f'inbound color and weight is {currentColor} {currentWeight}')
-        logging.debug(f'Getting color for {property_in}')
-        
-        color = ''
+                        self.ufields[name].setCheckState(Qt.CheckState.Unchecked)
+
+    def setFillcolor(
+        self, property_in: str, value_in: str, currentColor: str, currentWeight: int
+    ) -> tuple:
+        """Updates color and weight values if greater than current"""
+        logging.debug(f"inbound color and weight is {currentColor} {currentWeight}")
+        logging.debug(f"Getting color for {property_in}")
+
+        color = ""
         weight = 0
-        colormap = self.saveData['fields'][property_in]['colorMap']
+        colormap = self.saveData["fields"][property_in]["colorMap"]
         for item in colormap.keys():
-            if re.match(fr'{item}', value_in):
-                color = self.saveData['fields'][property_in]['colorMap'].get(item)
-                weight = self.saveData['fields'][property_in].get("colorWeight")
+            if re.match(fr"{item}", value_in):
+                color = self.saveData["fields"][property_in]["colorMap"].get(item)
+                weight = self.saveData["fields"][property_in].get("colorWeight")
             if color and (weight > currentWeight):
-                logging.debug(f'color and weight are now {color} {weight}')
+                logging.debug(f"color and weight are now {color} {weight}")
                 return (color, weight)
         else:
-            logging.debug(f'color and weight remain {currentColor} {weight}')
+            logging.debug(f"color and weight remain {currentColor} {weight}")
             return (currentColor, currentWeight)
-
-
 
     def merge(self):
         cidrDetails = None
         for row in self.data:
             for cell in row:
-                fillcolor = ''
+                fillcolor = ""
                 fillweight = 0
-                if cidr := cell.get('network'):
+                if cidr := cell.get("network"):
                     if cidrDetails := self.saveData.get(cidr):
                         for property, value in cidrDetails.items():
-                            if self.saveData['fields'][property]['show'] == 'True':
+                            if self.saveData["fields"][property]["show"] == "True":
                                 cell[property] = value
-                                logging.debug(f'getting fillcolor for {property} {value}')
-                                cell['color'], fillweight = self.setFillcolor(
-                                                              property,
-                                                              value,
-                                                              cell.get('color'),
-                                                              fillweight)
+                                logging.debug(
+                                    f"getting fillcolor for {property} {value}"
+                                )
+                                cell["color"], fillweight = self.setFillcolor(
+                                    property, value, cell.get("color"), fillweight
+                                )
+
     def generate(self):
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())

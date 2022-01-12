@@ -1,3 +1,5 @@
+Multi window interface to show multiple visualizatons.
+Search /
 Coloring
     Colormap off of checkbox state.
     Gui based color chooser and priority setter.
