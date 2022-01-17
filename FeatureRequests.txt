@@ -5,13 +5,10 @@ Coloring
     Gui based color chooser and priority setter.
 
 Fields
-    More robust field handeling in general.
-        Dynamically add new field if discovered.
-            Run through dictionary once to complete a discovery.
     GUI based field editor.
 
 General
-    New button.
+    New button. (Do next)
     Dirty clean state in file name.
         Unsaved changes warning upon exit.
     Print function
@@ -25,4 +22,4 @@ Fix layout, dedicated widgets for each section
     Data Display
 
 BUGS:
-Need update file name on save.
+

@@ -207,7 +207,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def checkField(self, cidr: dict):
         for fieldname in self.saveData[cidr].keys():
-            print(fieldname)
             if fieldname not in self.saveData["fields"].keys():
                 entry = {
                     fieldname: {
@@ -217,7 +216,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     }
                 }
                 self.saveData["fields"].update(entry)
-        print(self.saveData["fields"].keys())
 
     def findFields(self):
         """Run through all the subnet entries and find any fields that are not in the
@@ -273,6 +271,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fileToSave = QtWidgets.QFileDialog.getSaveFileName(self, "WHERE?")
         if fileToSave[0]:
             self.write(fileToSave[0])
+            self.openfile.setText(fileToSave[0])
 
     def save(self):
         if self.openfile.text() == "NONE":
