@@ -12,4 +12,7 @@
 | Regular expression matching on line edits                   | 12/16/21 |
 | Fixed colorization problem, began logging setup with debugs | 12/23/21 |
 | Implemented save and saveAs independently                   | 12/27/21 |
+| Auto add of discovered feilds at runtime                    | 1/11/22  |
+| File name updates with savAS                                | 1/11/22  |
+| Added new Button                                            | 1/17/22  |
 |                                                             |          |
