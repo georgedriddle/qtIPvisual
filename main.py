@@ -4,13 +4,16 @@ import logging
 from ipaddress import ip_network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtPrintSupport import QPrinter
 from PyQt6.QtGui import (
     QAction,
     QIcon,
     QColor,
     QIntValidator,
     QRegularExpressionValidator,
+    QPainter,
 )
+from gui.settings import Ui_frmSettings
 import databuilder
 
 logging.basicConfig(level=logging.INFO)
@@ -48,6 +51,8 @@ class TableModel(QtCore.QAbstractTableModel):
     def columnCount(self, index):
         return len(self._data[0])
 
+class settingsWindow(QtWidgets.QWidget, Ui_frmSettings):
+    super(Ui_frmSettings).__init__
 
 class MainWindow(QtWidgets.QMainWindow):
     matchcidr = QRegularExpression(
@@ -67,6 +72,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.autoSave = True
         self.auto_update = True
 
+        newIcon = QIcon("icons/new-text.png")
+        newAction = QAction(newIcon, "New", self)
+        newAction.triggered.connect(self.new)
+
         loadIcon = QIcon("icons/database--plus.png")
         loadAction = QAction(loadIcon, "Load", self)
         loadAction.setStatusTip("Load Data!")
@@ -85,6 +94,8 @@ class MainWindow(QtWidgets.QMainWindow):
         printIcon = QIcon("icons/printer.png")
         printAction = QAction(printIcon, "Print", self)
         printAction.setStatusTip("Not Implemented")
+        printAction.triggered.connect(self.print)
+
         aboutIcon = QIcon("icons/question-button.png")
         aboutAction = QAction(aboutIcon, "About", self)
         aboutAction.setStatusTip("Not Implemented")
@@ -94,6 +105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         settingsAction.setStatusTip("Settings")
         settingsAction.triggered.connect(self.settings)
 
+        toolbar.addAction(newAction)
         toolbar.addAction(loadAction)
         toolbar.addAction(saveAction)
         toolbar.addAction(saveAsAction)
@@ -162,17 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(fields_section, 4, 0, 1, 3)
         widget.setLayout(layout)
 
-        self.saveData = {
-            "fields": {
-                "Name": {
-                    "controlType": "lineEdit",
-                    "colorMap": {".*": "green"},
-                    "colorWeight": 1,
-                    "show": "True",
-                }
-            }
-        }
-        self.add_user_fields_to_form()
+        self.settingsW = QtWidgets.QWidget(Ui_frmSettings, )
 
     def add_user_fields_to_form(self):
         self.deleteIcon = QIcon("icons/cross.png")
@@ -223,6 +225,19 @@ class MainWindow(QtWidgets.QMainWindow):
         for cidr in self.saveData.keys():
             if cidr not in ["fields"]:  # cleaner to re.match on cidr pattern?
                 self.checkField(cidr)
+
+    def new(self):
+        self.saveData = {
+            "fields": {
+                "Name": {
+                    "controlType": "lineEdit",
+                    "colorMap": {".*": "green"},
+                    "colorWeight": 1,
+                    "show": "True",
+                }
+            }
+        }
+        self.add_user_fields_to_form()
 
     def loadSaveData(self):  # make this return value, better to read above.
         """1. Loads file into saveData dictionary"""
@@ -283,6 +298,15 @@ class MainWindow(QtWidgets.QMainWindow):
         print("Cool stuff comming soon")
         # Page 66 on Freda to create a dialog.
 
+    def print(self):
+        self.prn = QPrinter()
+        self.prn.colorMode = QPrinter.ColorMode.Color
+        self.prn.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+        self.prn.setOutputFileName("test.pdf")
+
+        painter = QPainter(self.prn)
+        self.render(painter)
+
     def clearUfileds(self):
         for key in self.ufields.keys():
             if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
@@ -337,7 +361,6 @@ class MainWindow(QtWidgets.QMainWindow):
         cidrDetails = None
         for row in self.data:
             for cell in row:
-                fillcolor = ""
                 fillweight = 0
                 if cidr := cell.get("network"):
                     if cidrDetails := self.saveData.get(cidr):
