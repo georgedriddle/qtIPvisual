@@ -51,8 +51,10 @@ class TableModel(QtCore.QAbstractTableModel):
     def columnCount(self, index):
         return len(self._data[0])
 
+
 class settingsWindow(QtWidgets.QWidget, Ui_frmSettings):
     super(Ui_frmSettings).__init__
+
 
 class MainWindow(QtWidgets.QMainWindow):
     matchcidr = QRegularExpression(
@@ -174,7 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(fields_section, 4, 0, 1, 3)
         widget.setLayout(layout)
 
-        self.settingsW = QtWidgets.QWidget(Ui_frmSettings, )
+        # self.settingsW = QtWidgets.QWidget(Ui_frmSettings, )
 
     def add_user_fields_to_form(self):
         self.deleteIcon = QIcon("icons/cross.png")
