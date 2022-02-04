@@ -254,6 +254,19 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.statusTip = "Failed to Load File"
 
+    def load(self):
+        """Returns first file from a QFiledialog"""
+        file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose a File")
+        if file[0]:
+            with open(file[0], "r") as F1:
+                data = json.load(F1)
+                return data
+
+    def editFields(self):
+        file = self.load()
+        fields = file["fields"]
+        # Open a new window
+
     def updateFormFields(self):
         key = self.ufields.get("key").text()  # Get key from field list
         if key:
