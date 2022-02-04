@@ -1,17 +1,6 @@
 from ipaddress import ip_network
 
 
-def makeEmptygrid(cCount: int, rCount: int) -> list[list]:
-    """Returns a null grid as a list of lists"""
-    table = []
-    for r in range(rCount):
-        rowdata = [{} for c in range(cCount)]
-        #    for c in range(cCount):
-        #        rowdata.append({})
-        table.append(rowdata)
-    return table
-
-
 def checkCidr(cidr: ip_network, startPrefix: int) -> ip_network:
     """Checks if the display start is less than the network prefix.
     It will update the network to the start prefix if so. Otherwise
@@ -28,7 +17,7 @@ def buildDisplayList(cidr: ip_network, startPrefix: int, endPrefix: int):
     cidr = checkCidr(cidr, startPrefix)
     columnCount = endPrefix - startPrefix + 1
     rowCount = 2 ** (endPrefix - cidr.prefixlen)
-    data = makeEmptygrid(columnCount, rowCount)
+    data = [[{} for c in range(columnCount)] for r in range(rowCount)]
     colNum = 0
 
     for prefix in list(range(startPrefix, endPrefix + 1)):
