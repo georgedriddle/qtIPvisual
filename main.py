@@ -183,8 +183,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon, "Delete")
         self.deleteBtn.setMaximumWidth(65)
         self.deleteBtn.clicked.connect(self.delRecord)
-        self.fieldlayout.addRow(self.deleteBtn)
+        self.plusIcon = QIcon("icons/application-plus-black.png")
+        self.plusBtn = QtWidgets.QPushButton(self.plusIcon, "Add Field")
+        self.plusBtn.setMaximumWidth(70)
+        self.plusBtn.clicked.connect(self.addRecord)
+        self.newField = QtWidgets.QLineEdit()
 
+        self.fieldlayout.addRow(self.deleteBtn)
+        self.fieldlayout.addRow(self.plusBtn)
+        self.fieldlayout.addRow(self.newField)
         self.ufields = {"key": QtWidgets.QLineEdit()}
 
         self.update_user_fields()
@@ -282,6 +289,22 @@ class MainWindow(QtWidgets.QMainWindow):
                     if val.checkState() == Qt.CheckState.Checked:
                         self.saveData[key][ref] = True
 
+    def addRecord(self):
+        if self.newField.text():
+            fieldData = {
+                "controlType": "lineEdit",
+                "colorMap": {},
+                "colorWeight": 1,
+                "show": "False",
+            }
+            self.saveData["fields"][self.newField.text()] = fieldData
+            self.ufields[self.newField.text()] = QtWidgets.QLineEdit()
+            self.clear_user_layout()
+            self.findFields()
+            self.add_user_fields_to_form()
+            logging.debug(f"{self.newField.text()} is {fieldData}")
+            self.update_user_fields()
+
     def delRecord(self):
         key = self.ufields.get("key").text()
         if self.saveData.get(key):
@@ -291,6 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def write(self, name):
         with open(name, "w") as F1:
             self.openfile.setText(name)
+            logging.debug(f"{self.saveData['fields']}")
             json.dump(self.saveData, F1, indent=4)
 
     def autoUpdate(self):
@@ -355,8 +379,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self, property_in: str, value_in: str, currentColor: str, currentWeight: int
     ) -> tuple:
         """Updates color and weight values if greater than current"""
-        logging.debug(f"inbound color and weight is {currentColor} {currentWeight}")
-        logging.debug(f"Getting color for {property_in}")
+        logging.info(f"inbound color and weight is {currentColor} {currentWeight}")
+        logging.info(f"Getting color for {property_in}")
 
         color = ""
         weight = 0
@@ -366,10 +390,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 color = self.saveData["fields"][property_in]["colorMap"].get(item)
                 weight = self.saveData["fields"][property_in].get("colorWeight")
             if color and (weight > currentWeight):
-                logging.debug(f"color and weight are now {color} {weight}")
+                logging.info(f"color and weight are now {color} {weight}")
                 return (color, weight)
         else:
-            logging.debug(f"color and weight remain {currentColor} {weight}")
+            logging.info(f"color and weight remain {currentColor} {weight}")
             return (currentColor, currentWeight)
 
     def merge(self):
