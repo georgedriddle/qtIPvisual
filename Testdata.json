@@ -1,0 +1,82 @@
+{
+    "fields": {
+        "Name": {
+            "controlType": "lineEdit",
+            "colorMap": {
+                ".*": "green"
+            },
+            "colorWeight": 1,
+            "show": "True"
+        },
+        "TEST": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        },
+        "Who": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        },
+        "What": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        },
+        "When": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        },
+        "Where": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        },
+        "Why": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        },
+        "Enclave": {
+            "controlType": "lineEdit",
+            "colorMap": {},
+            "colorWeight": 1,
+            "show": "False"
+        }
+    },
+    "192.168.1.0/26": {
+        "Name": "NET0",
+        "TEST": "",
+        "Who": "George",
+        "What": "Development"
+    },
+    "192.168.1.64/26": {
+        "Name": "NET1",
+        "TEST": "",
+        "Who": "",
+        "What": ""
+    },
+    "192.168.1.128/26": {
+        "Name": "NET2",
+        "TEST": "",
+        "Who": "",
+        "What": ""
+    },
+    "192.168.1.80/28": {
+        "Name": "",
+        "TEST": "",
+        "Who": "",
+        "What": "",
+        "When": "",
+        "Where": "",
+        "Why": "",
+        "Enclave": "wtfChuck?"
+    }
+}

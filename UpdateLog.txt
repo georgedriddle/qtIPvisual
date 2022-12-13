@@ -15,4 +15,5 @@
 | Auto add of discovered feilds at runtime                    | 1/11/22  |
 | File name updates with savAS                                | 1/11/22  |
 | Added new Button                                            | 1/17/22  |
+| can now add user fields in GUI                              | 12/11/22 |
 |                                                             |          |

@@ -183,8 +183,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon, "Delete")
         self.deleteBtn.setMaximumWidth(65)
         self.deleteBtn.clicked.connect(self.delRecord)
-        self.fieldlayout.addRow(self.deleteBtn)
+        self.plusIcon = QIcon("icons/application-plus-black.png")
+        self.plusBtn = QtWidgets.QPushButton(self.plusIcon, "Add Field")
+        self.plusBtn.setMaximumWidth(75)
+        self.plusBtn.clicked.connect(self.addRecord)
+        self.newField = QtWidgets.QLineEdit()
 
+        self.fieldlayout.addRow(self.deleteBtn)
+        self.fieldlayout.addRow(self.plusBtn)
+        self.fieldlayout.addRow(self.newField)
         self.ufields = {"key": QtWidgets.QLineEdit()}
 
         self.update_user_fields()
@@ -254,6 +261,19 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.statusTip = "Failed to Load File"
 
+    def load(self):
+        """Returns first file from a QFiledialog"""
+        file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose a File")
+        if file[0]:
+            with open(file[0], "r") as F1:
+                data = json.load(F1)
+                return data
+
+    def editFields(self):
+        file = self.load()
+        fields = file["fields"]
+        # Open a new window
+
     def updateFormFields(self):
         key = self.ufields.get("key").text()  # Get key from field list
         if key:
@@ -269,6 +289,22 @@ class MainWindow(QtWidgets.QMainWindow):
                     if val.checkState() == Qt.CheckState.Checked:
                         self.saveData[key][ref] = True
 
+    def addRecord(self):
+        if self.newField.text():
+            fieldData = {
+                "controlType": "lineEdit",
+                "colorMap": {},
+                "colorWeight": 1,
+                "show": "False",
+            }
+            self.saveData["fields"][self.newField.text()] = fieldData
+            self.ufields[self.newField.text()] = QtWidgets.QLineEdit()
+            self.clear_user_layout()
+            self.findFields()
+            self.add_user_fields_to_form()
+            logging.debug(f"{self.newField.text()} is {fieldData}")
+            self.update_user_fields()
+
     def delRecord(self):
         key = self.ufields.get("key").text()
         if self.saveData.get(key):
@@ -278,6 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def write(self, name):
         with open(name, "w") as F1:
             self.openfile.setText(name)
+            logging.debug(f"{self.saveData['fields']}")
             json.dump(self.saveData, F1, indent=4)
 
     def autoUpdate(self):
