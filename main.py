@@ -185,7 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.deleteBtn.clicked.connect(self.delRecord)
         self.plusIcon = QIcon("icons/application-plus-black.png")
         self.plusBtn = QtWidgets.QPushButton(self.plusIcon, "Add Field")
-        self.plusBtn.setMaximumWidth(70)
+        self.plusBtn.setMaximumWidth(75)
         self.plusBtn.clicked.connect(self.addRecord)
         self.newField = QtWidgets.QLineEdit()
 
@@ -379,8 +379,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self, property_in: str, value_in: str, currentColor: str, currentWeight: int
     ) -> tuple:
         """Updates color and weight values if greater than current"""
-        logging.info(f"inbound color and weight is {currentColor} {currentWeight}")
-        logging.info(f"Getting color for {property_in}")
+        logging.debug(f"inbound color and weight is {currentColor} {currentWeight}")
+        logging.debug(f"Getting color for {property_in}")
 
         color = ""
         weight = 0
@@ -390,10 +390,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 color = self.saveData["fields"][property_in]["colorMap"].get(item)
                 weight = self.saveData["fields"][property_in].get("colorWeight")
             if color and (weight > currentWeight):
-                logging.info(f"color and weight are now {color} {weight}")
+                logging.debug(f"color and weight are now {color} {weight}")
                 return (color, weight)
         else:
-            logging.info(f"color and weight remain {currentColor} {weight}")
+            logging.debug(f"color and weight remain {currentColor} {weight}")
             return (currentColor, currentWeight)
 
     def merge(self):
