@@ -40,8 +40,7 @@ class TableModel(QtCore.QAbstractTableModel):
 
         if role == Qt.ItemDataRole.BackgroundRole:
             value = self._data[index.row()][index.column()]
-            if item.get("color"):
-                clr = item.get("color")
+            if clr := item.get("color"):
                 logging.debug(f"color = {clr}")
                 return QColor(clr)
 
@@ -181,7 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 "controlType": "lineEdit",
                 "colorMap": {".*": "green"},
                 "colorWeight": 1,
-                "show": "True",
+                "show": True,
             }
         }
         self.fields = {}
@@ -232,7 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     fieldname: {
                         "controlType": "lineEdit",
                         "colorMap": {},
-                        "show": "False",
+                        "show": False,
                     }
                 }
                 self.fields.update(entry)
@@ -283,17 +282,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def updateNetworksData(self):
         # TODO Pull key field out of user fields
         if cidr := self.ufields.get("key").text():
-            logging.info(f"updateNetworksData: updating {cidr}")
+            logging.debug(f"updateNetworksData: updating {cidr}")
             self.networks[cidr] = {}
-            logging.info(f"updateNetworksData: iterating over form fileds")
+            logging.debug(f"updateNetworksData: iterating over form fileds")
             for fldname, val in self.ufields.items():
                 if fldname == "key":
                     continue
                 newvalue = val.text()
-                logging.info(f"updateNetworksData: {fldname} is {newvalue}")
+                logging.debug(f"updateNetworksData: {fldname} is {newvalue}")
                 if self.fields[fldname]["controlType"] == "lineEdit":
                     self.networks[cidr][fldname] = newvalue
-                    logging.info(f" networks is now: {self.networks}")
+                    logging.debug(f" networks is now: {self.networks}")
                 elif self.fields[fldname]["controlType"] == "checkbox":
                     if val.checkState() == Qt.CheckState.Checked:
                         self.fields[cidr][fldname] = True
@@ -305,7 +304,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 "controlType": "lineEdit",
                 "colorMap": {},
                 "colorWeight": 1,
-                "show": "False",
+                "show": False,
             }
             self.fields[self.newField.text()] = fieldData
             self.ufields[self.newField.text()] = QtWidgets.QLineEdit()
@@ -321,7 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
         key = self.ufields.get("key").text()
         if self.networks.get(key):
             self.networks.pop(key)
-        self.clearUfileds()
+        self.clearUfields()
 
     def write(self, name):
         with open(name, "w") as F1:
@@ -360,7 +359,8 @@ class MainWindow(QtWidgets.QMainWindow):
         painter = QPainter(self.prn)
         self.render(painter)
 
-    def clearUfileds(self):
+    def clearUfields(self):
+        logging.info("clearufields()")
         for key in self.ufields.keys():
             if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
                 self.ufields[key].setText("")
@@ -369,7 +369,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ufields[key] == Qt.CheckState.Unchecked
 
     def showSelection(self):
-        self.clearUfileds()
+        logging.debug("showSelection()")
+        self.clearUfields()
         z = self.table.selectedIndexes()[0]
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
         selected_cidr = selectedDisplay.split()[0]
@@ -390,19 +391,19 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.ufields[name].setCheckState(Qt.CheckState.Unchecked)
 
     def setFillcolor(
-        self, property_in: str, value_in: str, currentColor: str, currentWeight: int
+        self, fieldName: str, value_in: str, currentColor: str, currentWeight: int
     ) -> tuple:
         """Updates color and weight values if greater than current"""
+        logging.debug("setFillcolor()")
         logging.debug(f"inbound color and weight is {currentColor} {currentWeight}")
-        logging.debug(f"Getting color for {property_in}")
-
+        logging.debug(f"Getting color for {fieldName}")
         color = ""
         weight = 0
-        colormap = self.fields[property_in]["colorMap"]
+        colormap = self.fields[fieldName]["colorMap"]
         for item in colormap.keys():
             if re.match(fr"{item}", value_in):
-                color = self.fields[property_in]["colorMap"].get(item)
-                weight = self.fields[property_in].get("colorWeight")
+                color = self.fields[fieldName]["colorMap"].get(item)
+                weight = self.fields[fieldName].get("colorWeight")
             if color and (weight > currentWeight):
                 logging.debug(f"color and weight are now {color} {weight}")
                 return (color, weight)
@@ -411,24 +412,33 @@ class MainWindow(QtWidgets.QMainWindow):
             return (currentColor, currentWeight)
 
     def merge(self):
+        logging.debug("merge()")
         cidrDetails = None
         for row in self.data:
             for cell in row:
                 fillweight = 0
                 if cidr := cell.get("network"):
+                    logging.debug(f"MERGE:CIDR value to check is {cidr}")
                     if cidrDetails := self.networks.get(cidr):
-                        logging.info(f"MERGE: {cidr} is in networks")
+                        logging.debug(f"MERGE: {cidr} is in networks")
+                        logging.debug(f"MERGE: cidr details are {cidrDetails}")
+
                         for property, value in cidrDetails.items():
-                            if self.fields[property]["show"] == True:
+                            showValue = self.fields[property]["show"]
+                            logging.debug(f"show value of {property} is {showValue} ")
+                            logging.debug(f" showValue is type {type(showValue)}")
+                            if showValue == True:
                                 cell[property] = value
                                 logging.debug(
                                     f"getting fillcolor for {property} {value}"
                                 )
-                                cell["color"], fillweight = self.setFillcolor(
+                                cell["color"], weight = self.setFillcolor(
                                     property, value, cell.get("color"), fillweight
                                 )
+                            else:
+                                logging.debug("Not showing")
                     else:
-                        logging.info(f"MERGE: {cidr} is not in networks")
+                        logging.debug(f"MERGE: {cidr} is not in networks")
 
     def generate(self):
         start = int(self.displayStart.text())
