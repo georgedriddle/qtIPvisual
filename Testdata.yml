@@ -1,0 +1,14 @@
+data:
+  192.168.1.0/24:
+    Name: ALL
+  192.168.1.0/25:
+    Name: 0-1
+  192.168.1.128/25:
+    Name: 0-2
+fields:
+  Name:
+    colorMap:
+      .*: green
+    colorWeight: 1
+    controlType: lineEdit
+    show: 'True'
