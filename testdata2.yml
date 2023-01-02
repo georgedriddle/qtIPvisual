@@ -1,0 +1,20 @@
+data:
+  192.168.1.28/32:
+    Name: last
+fields:
+  Name:
+    colorMap:
+      .*: green
+    colorWeight: 1
+    controlType: lineEdit
+    show: true
+  U1:
+    colorMap: {}
+    colorWeight: 1
+    controlType: lineEdit
+    show: false
+  u2:
+    colorMap: {}
+    colorWeight: 1
+    controlType: lineEdit
+    show: false

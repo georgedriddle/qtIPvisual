@@ -51,10 +51,6 @@ class TableModel(QtCore.QAbstractTableModel):
         return len(self._data[0])
 
 
-class settingsWindow(QtWidgets.QWidget, Ui_frmSettings):
-    super(Ui_frmSettings).__init__
-
-
 class MainWindow(QtWidgets.QMainWindow):
     matchcidr = QRegularExpression(
         r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
@@ -80,7 +76,7 @@ class MainWindow(QtWidgets.QMainWindow):
         loadIcon = QIcon("icons/database--plus.png")
         loadAction = QAction(loadIcon, "Load", self)
         loadAction.setStatusTip("Load Data!")
-        loadAction.triggered.connect(self.loadSaveData)
+        loadAction.triggered.connect(self.load_save_data)
 
         saveicon = QIcon("icons/disk-return.png")
         saveAction = QAction(saveicon, "Save", self)
@@ -123,10 +119,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStatusBar(QtWidgets.QStatusBar(self))
 
         self.filebtn = QtWidgets.QPushButton("Open File")
-        self.filebtn.clicked.connect(self.loadSaveData)
+        self.filebtn.clicked.connect(self.load_save_data)
         widget = QtWidgets.QWidget()
         self.table = QtWidgets.QTableView()
-        self.table.clicked.connect(self.showSelection)
+        self.table.clicked.connect(self.show_selection)
 
         self.labelNetwork = QtWidgets.QLabel("Network to Visualze")
         self.labelNetwork.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -157,6 +153,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(widget)
         self.setGeometry(600, 100, 400, 200)
 
+        self.deleteIcon = QIcon("icons/cross.png")
+        self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon, "Delete")
+        self.deleteBtn.setMaximumWidth(65)
+        self.deleteBtn.clicked.connect(self.delete_record)
+
+        self.plusIcon = QIcon("icons/application-plus-black.png")
+        self.plusBtn = QtWidgets.QPushButton(self.plusIcon, "Add Field")
+        self.plusBtn.setMaximumWidth(75)
+        self.plusBtn.clicked.connect(self.add_user_field)
+
+        self.label_cidr = QtWidgets.QLabel("CIDR")
+        self.cidr = QtWidgets.QLineEdit()
+
         fields_section = QtWidgets.QWidget(None)
         fields_section.setMaximumWidth(300)
         self.fieldlayout = QtWidgets.QFormLayout()
@@ -170,9 +179,14 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.btnGenerate, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.label_cidr, 4, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.cidr, 5, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.deleteBtn, 5, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.plusBtn, 5, 2, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.openfile, 3, 4)
-        layout.addWidget(self.table, 4, 4)
-        layout.addWidget(fields_section, 4, 0, 1, 3)
+        layout.addWidget(fields_section, 6, 0, 1, 3)
+        layout.addWidget(self.table, 6, 4)
+
         widget.setLayout(layout)
 
         self.defaultFields = {
@@ -183,24 +197,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 "show": True,
             }
         }
+        # Need to set up a Model for fields
         self.fields = {}
         self.networks = {}
+        self.ufields = {}
 
     def add_user_fields_to_form(self):
-        self.deleteIcon = QIcon("icons/cross.png")
-        self.deleteBtn = QtWidgets.QPushButton(self.deleteIcon, "Delete")
-        self.deleteBtn.setMaximumWidth(65)
-        self.deleteBtn.clicked.connect(self.delRecord)
-        self.plusIcon = QIcon("icons/application-plus-black.png")
-        self.plusBtn = QtWidgets.QPushButton(self.plusIcon, "Add Field")
-        self.plusBtn.setMaximumWidth(75)
-        self.plusBtn.clicked.connect(self.addRecord)
-        self.newField = QtWidgets.QLineEdit()
-
-        self.fieldlayout.addRow(self.deleteBtn)
-        self.fieldlayout.addRow(self.plusBtn)
-        self.fieldlayout.addRow(self.newField)
-        self.ufields = {"key": QtWidgets.QLineEdit()}
+        logging.info("add_user_fields_to_form()")
+        # TODO Need to remove this but have to find all cross references.
+        # self.ufields = {"key": QtWidgets.QLineEdit()}
 
         self.update_user_fields()
         for key, value in self.ufields.items():
@@ -208,10 +213,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         UpdateIcon = QIcon("icons/block--arrow.png")
         updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
-        updateBtn.clicked.connect(self.updateNetworksData)
+        updateBtn.clicked.connect(self.update_networks_data)
         self.fieldlayout.addRow(updateBtn)
 
     def update_user_fields(self):
+        logging.info("update_user_fields()")
         for fieldname in self.fields.keys():
             if self.fields[fieldname]["controlType"] == "lineEdit":
                 self.ufields[fieldname] = QtWidgets.QLineEdit()
@@ -220,11 +226,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ufields[fieldname] = QtWidgets.QCheckBox()
 
     def clear_user_layout(self):
+        logging.info("clear_user_layout")
         rowCount = self.fieldlayout.rowCount()
         for x in range(rowCount - 1, -1, -1):
             self.fieldlayout.removeRow(x)
 
-    def checkField(self, cidr: dict):
+    def check_field(self, cidr: dict):
+        logging.info("check_field()")
         for fieldname in self.networks.get(cidr).keys():
             if fieldname not in self.fields.keys():
                 entry = {
@@ -236,17 +244,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 }
                 self.fields.update(entry)
 
-    def findFields(self):
+    def find_fields(self):
         """Run through all the subnet entries and find any fields that are not in the fields section"""
+        logging.info("find_fields()")
         for cidr in self.networks.keys():
-            self.checkField(cidr)
+            self.check_field(cidr)
 
     def new(self):
+        logging.info("new()")
         self.fields = self.defaultFields
         self.add_user_fields_to_form()
 
-    def loadSaveData(self):
+    def load_save_data(self):
         """1. Loads file into saveData dictionary"""
+        logging.info("load_save_data()")
         self.clear_user_layout()
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
         if file[0]:
@@ -265,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     logging.warning(f"Did not find networks in {file[0]}")
                     self.networks = {}
             self.openfile.setText(file[0])
-            self.findFields()
+            self.find_fields()
             self.add_user_fields_to_form()
         else:
             self.statusTip = "Failed to Load File"
@@ -279,45 +290,49 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.fields = data["fields"]
                 self.networks = data["data"]
 
-    def updateNetworksData(self):
+    def update_networks_data(self):
         # TODO Pull key field out of user fields
-        if cidr := self.ufields.get("key").text():
-            logging.debug(f"updateNetworksData: updating {cidr}")
-            self.networks[cidr] = {}
-            logging.debug(f"updateNetworksData: iterating over form fileds")
+        logging.info("update_networks_data()")
+        # TODO Next line can be improved I think.
+        if self.cidr:
+            logging.debug(f"update_networks_data: updating {self.cidr}")
+            self.networks[self.cidr] = {}
+            logging.debug(f"update_networks_data: iterating over form fileds")
             for fldname, val in self.ufields.items():
-                if fldname == "key":
-                    continue
+
                 newvalue = val.text()
-                logging.debug(f"updateNetworksData: {fldname} is {newvalue}")
+                logging.debug(f"update_networks_data: {fldname} is {newvalue}")
                 if self.fields[fldname]["controlType"] == "lineEdit":
-                    self.networks[cidr][fldname] = newvalue
+                    self.networks[self.cidr][fldname] = newvalue
                     logging.debug(f" networks is now: {self.networks}")
                 elif self.fields[fldname]["controlType"] == "checkbox":
                     if val.checkState() == Qt.CheckState.Checked:
-                        self.fields[cidr][fldname] = True
+                        self.fields[self.cidr][fldname] = True
 
-    def addRecord(self):
+    def add_user_field(self):
         """Adds a new user defined field to the form"""
-        if self.newField.text():
+        logging.info("add_user_fields()")
+        newName, ok = QtWidgets.QInputDialog.getText(self, "New field name", "Name")
+        if newName and ok:
             fieldData = {
                 "controlType": "lineEdit",
                 "colorMap": {},
                 "colorWeight": 1,
                 "show": False,
             }
-            self.fields[self.newField.text()] = fieldData
-            self.ufields[self.newField.text()] = QtWidgets.QLineEdit()
+            self.fields[newName] = fieldData
+            self.ufields[newName] = QtWidgets.QLineEdit()
+            self.find_fields()
             self.clear_user_layout()
-            self.findFields()
             self.add_user_fields_to_form()
             self.update_user_fields()
-            self.updateNetworksData()
-            logging.debug(f"{self.newField.text()} is {fieldData}")
-            self.update_user_fields()
+            self.generate()
+            self.merge()
+            logging.debug(f"fields[{newName}] is {self.fields[newName]}")
 
-    def delRecord(self):
-        key = self.ufields.get("key").text()
+    def delete_record(self):
+        logging.info("delete_record()")
+        key = self.cidr
         if self.networks.get(key):
             self.networks.pop(key)
         self.clearUfields()
@@ -331,8 +346,9 @@ class MainWindow(QtWidgets.QMainWindow):
             yaml.dump(self.flds, F1)
 
     def autoUpdate(self):
+        logging.info("autoUpdate()")
         if self.auto_update:
-            self.updateNetworksData()
+            self.update_networks_data()
 
     def saveAs(self):
         fileToSave = QtWidgets.QFileDialog.getSaveFileName(self, "WHERE?")
@@ -368,14 +384,17 @@ class MainWindow(QtWidgets.QMainWindow):
             elif type(self.fields.get(key)) == QtWidgets.QCheckBox:
                 self.ufields[key] == Qt.CheckState.Unchecked
 
-    def showSelection(self):
-        logging.debug("showSelection()")
+    def show_selection(self):
+        logging.info("show_selection()")
         self.clearUfields()
         z = self.table.selectedIndexes()[0]
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
         selected_cidr = selectedDisplay.split()[0]
-        self.ufields["key"].setText(selected_cidr)
+        self.cidr.setText(selected_cidr)
+        logging.info(f"selected_cidr is {selected_cidr}")
         data = self.networks.get(selected_cidr)
+        logging.info(f"show_selection: Populating user fields with {data}")
+        logging.info(f"Into these user fields {self.ufields.keys()}")
         if data:
             for name in data:
                 if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
@@ -412,7 +431,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return (currentColor, currentWeight)
 
     def merge(self):
-        logging.debug("merge()")
+        logging.info("merge()")
         cidrDetails = None
         for row in self.data:
             for cell in row:
@@ -441,6 +460,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         logging.debug(f"MERGE: {cidr} is not in networks")
 
     def generate(self):
+        logging.info("generate()")
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
         net = ip_network(self.displayNetwork.text(), strict=False)

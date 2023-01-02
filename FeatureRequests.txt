@@ -4,9 +4,6 @@ Coloring
     Colormap off of checkbox state.
     Gui based color chooser and priority setter.
 
-Fields
-    GUI based field editor.
-
 General
     Dirty clean state in file name.
         Unsaved changes warning upon exit.
