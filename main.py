@@ -295,19 +295,20 @@ class MainWindow(QtWidgets.QMainWindow):
         logging.info("update_networks_data()")
         # TODO Next line can be improved I think.
         if self.cidr:
-            logging.debug(f"update_networks_data: updating {self.cidr}")
-            self.networks[self.cidr] = {}
-            logging.debug(f"update_networks_data: iterating over form fileds")
+            net = self.cidr.text()
+            logging.info(f"update_networks_data: updating {net}")
+            self.networks[net] = {}
+            logging.info(f"update_networks_data: iterating over form fileds")
             for fldname, val in self.ufields.items():
-
                 newvalue = val.text()
-                logging.debug(f"update_networks_data: {fldname} is {newvalue}")
+                logging.info(f"newvalue is {newvalue}")
+                logging.info(f"update_networks_data: {fldname} is {newvalue}")
                 if self.fields[fldname]["controlType"] == "lineEdit":
-                    self.networks[self.cidr][fldname] = newvalue
-                    logging.debug(f" networks is now: {self.networks}")
+                    self.networks[net][fldname] = newvalue
+                    logging.info(f" networks is now: {self.networks}")
                 elif self.fields[fldname]["controlType"] == "checkbox":
                     if val.checkState() == Qt.CheckState.Checked:
-                        self.fields[self.cidr][fldname] = True
+                        self.fields[net][fldname] = True
 
     def add_user_field(self):
         """Adds a new user defined field to the form"""
@@ -433,14 +434,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def merge(self):
         logging.info("merge()")
         cidrDetails = None
+        logging.info(f"merge in {self.networks}")
         for row in self.data:
             for cell in row:
                 fillweight = 0
                 if cidr := cell.get("network"):
-                    logging.debug(f"MERGE:CIDR value to check is {cidr}")
+                    logging.info(f"MERGE:CIDR value to check is {cidr}")
                     if cidrDetails := self.networks.get(cidr):
-                        logging.debug(f"MERGE: {cidr} is in networks")
-                        logging.debug(f"MERGE: cidr details are {cidrDetails}")
+                        logging.info(f"MERGE: {cidr} is in networks")
+                        logging.info(f"MERGE: cidr details are {cidrDetails}")
 
                         for property, value in cidrDetails.items():
                             showValue = self.fields[property]["show"]
