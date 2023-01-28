@@ -204,9 +204,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_user_fields_to_form(self):
         logging.info("add_user_fields_to_form()")
-        # TODO Need to remove this but have to find all cross references.
-        # self.ufields = {"key": QtWidgets.QLineEdit()}
-
         self.update_user_fields()
         for key, value in self.ufields.items():
             self.fieldlayout.addRow(key, value)
@@ -296,16 +293,16 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO Next line can be improved I think.
         if self.cidr:
             net = self.cidr.text()
-            logging.info(f"update_networks_data: updating {net}")
+            logging.debug(f"update_networks_data: updating {net}")
             self.networks[net] = {}
-            logging.info(f"update_networks_data: iterating over form fileds")
+            logging.debug(f"update_networks_data: iterating over form fileds")
             for fldname, val in self.ufields.items():
                 newvalue = val.text()
-                logging.info(f"newvalue is {newvalue}")
+                logging.debug(f"newvalue is {newvalue}")
                 logging.info(f"update_networks_data: {fldname} is {newvalue}")
                 if self.fields[fldname]["controlType"] == "lineEdit":
                     self.networks[net][fldname] = newvalue
-                    logging.info(f" networks is now: {self.networks}")
+                    logging.debug(f" networks is now: {self.networks}")
                 elif self.fields[fldname]["controlType"] == "checkbox":
                     if val.checkState() == Qt.CheckState.Checked:
                         self.fields[net][fldname] = True
@@ -392,10 +389,10 @@ class MainWindow(QtWidgets.QMainWindow):
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
         selected_cidr = selectedDisplay.split()[0]
         self.cidr.setText(selected_cidr)
-        logging.info(f"selected_cidr is {selected_cidr}")
+        logging.debug(f"selected_cidr is {selected_cidr}")
         data = self.networks.get(selected_cidr)
-        logging.info(f"show_selection: Populating user fields with {data}")
-        logging.info(f"Into these user fields {self.ufields.keys()}")
+        logging.debug(f"show_selection: Populating user fields with {data}")
+        logging.debug(f"Into these user fields {self.ufields.keys()}")
         if data:
             for name in data:
                 if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
@@ -434,15 +431,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def merge(self):
         logging.info("merge()")
         cidrDetails = None
-        logging.info(f"merge in {self.networks}")
+        logging.debug(f"merge in {self.networks}")
         for row in self.data:
             for cell in row:
                 fillweight = 0
                 if cidr := cell.get("network"):
-                    logging.info(f"MERGE:CIDR value to check is {cidr}")
+                    logging.debug(f"MERGE:CIDR value to check is {cidr}")
                     if cidrDetails := self.networks.get(cidr):
-                        logging.info(f"MERGE: {cidr} is in networks")
-                        logging.info(f"MERGE: cidr details are {cidrDetails}")
+                        logging.debug(f"MERGE: {cidr} is in networks")
+                        logging.debug(f"MERGE: cidr details are {cidrDetails}")
 
                         for property, value in cidrDetails.items():
                             showValue = self.fields[property]["show"]

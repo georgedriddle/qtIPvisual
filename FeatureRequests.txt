@@ -21,3 +21,4 @@ Fix layout, dedicated widgets for each section
 
 BUGS:
 
+After adding a userfield, updates no longer working.
