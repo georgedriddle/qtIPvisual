@@ -5,6 +5,7 @@ Coloring
     Gui based color chooser and priority setter.
 
 General
+    Get user_name for logging (system logon name?)
     Dirty clean state in file name.
         Unsaved changes warning upon exit.
     Print function
@@ -13,12 +14,5 @@ General
     Search
     update on table selection via arrow buttons, vice having to click.
     Update table view immedietly upon data field update
-Fix layout, dedicated widgets for each section
-    menu
-    Network Fields
-    Detail Fields
-    Data Display
-
-BUGS:
 
 After adding a userfield, updates no longer working.
