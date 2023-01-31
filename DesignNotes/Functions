@@ -1,0 +1,11 @@
+MainWindow
+    __init__
+    add_user_fields_to_form
+        calls update_user_fields()
+        Adds identified fields to fieldlayout
+        Adds update button and icon
+    update_user_fields
+    clear_user_layout
+    check_field
+    find_fields 
+        calls check_field

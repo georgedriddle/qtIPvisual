@@ -170,7 +170,6 @@ class MainWindow(QtWidgets.QMainWindow):
         fields_section.setMaximumWidth(300)
         self.fieldlayout = QtWidgets.QFormLayout()
         fields_section.setLayout(self.fieldlayout)
-        rootLayout = QtWidgets.QGridLayout()
         layout = QtWidgets.QGridLayout()
         net_section = QtWidgets.QWidget(None)
         netLayout = QtWidgets.QGridLayout()
@@ -184,20 +183,20 @@ class MainWindow(QtWidgets.QMainWindow):
         net_section.setLayout(netLayout)
 
         layout.addWidget(net_section, 0, 0)
-        layout.addWidget(self.label_cidr, 4, 0, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.cidr, 5, 0, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.deleteBtn, 5, 1, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.plusBtn, 5, 2, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.openfile, 3, 4)
-        layout.addWidget(fields_section, 6, 0, 1, 3)
-        layout.addWidget(self.table, 6, 4)
+        layout.addWidget(self.label_cidr, 2, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.cidr, 3, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.deleteBtn, 3, 1, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.plusBtn, 3, 2, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.openfile, 1, 4)
+        layout.addWidget(fields_section, 4, 0, 1, 3)
+        layout.addWidget(self.table, 4, 4)
 
         widget.setLayout(layout)
 
         self.defaultFields = {
             "Name": {
                 "controlType": "lineEdit",
-                "colorMap": {".*": "green"},
+                "colorMap": {r"\w": "green"},
                 "colorWeight": 1,
                 "show": True,
             }
@@ -209,9 +208,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_user_fields_to_form(self):
         logging.info("add_user_fields_to_form()")
-        # TODO Need to remove this but have to find all cross references.
-        # self.ufields = {"key": QtWidgets.QLineEdit()}
-
         self.update_user_fields()
         for key, value in self.ufields.items():
             self.fieldlayout.addRow(key, value)
@@ -237,6 +233,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.fieldlayout.removeRow(x)
 
     def check_field(self, cidr: dict):
+        """Verifies that the field in the data section
+        has a coresponding entry in the fields section.
+        Adds it to fields as a lineEdit if not there."""
         logging.info("check_field()")
         for fieldname in self.networks.get(cidr).keys():
             if fieldname not in self.fields.keys():
@@ -251,6 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def find_fields(self):
         """Run through all the subnet entries and find any fields that are not in the fields section"""
+        # TO DO: Cache found fields and skip check if already checked.
         logging.info("find_fields()")
         for cidr in self.networks.keys():
             self.check_field(cidr)
@@ -286,15 +286,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.statusTip = "Failed to Load File"
 
-    def load(self):
-        """Loads fields and data sections from yaml file"""
-        file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose a File")
-        if file[0]:
-            with open(file[0], "r") as F1:
-                data = yaml.load(F1)
-                self.fields = data["fields"]
-                self.networks = data["data"]
-
     def update_networks_data(self):
         # TODO Pull key field out of user fields
         logging.info("update_networks_data()")
@@ -327,9 +318,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 "show": False,
             }
             self.fields[newName] = fieldData
+            logging.info(f'self.fields is now {self.fields}')
             self.ufields[newName] = QtWidgets.QLineEdit()
-            self.find_fields()
             self.clear_user_layout()
+            self.find_fields()
             self.add_user_fields_to_form()
             self.update_user_fields()
             self.generate()
@@ -397,10 +389,10 @@ class MainWindow(QtWidgets.QMainWindow):
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
         selected_cidr = selectedDisplay.split()[0]
         self.cidr.setText(selected_cidr)
-        logging.info(f"selected_cidr is {selected_cidr}")
+        logging.debug(f"selected_cidr is {selected_cidr}")
         data = self.networks.get(selected_cidr)
-        logging.info(f"show_selection: Populating user fields with {data}")
-        logging.info(f"Into these user fields {self.ufields.keys()}")
+        logging.debug(f"show_selection: Populating user fields with {data}")
+        logging.debug(f"Into these user fields {self.ufields.keys()}")
         if data:
             for name in data:
                 if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
@@ -419,21 +411,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self, fieldName: str, value_in: str, currentColor: str, currentWeight: int
     ) -> tuple:
         """Updates color and weight values if greater than current"""
-        logging.debug("setFillcolor()")
-        logging.debug(f"inbound color and weight is {currentColor} {currentWeight}")
-        logging.debug(f"Getting color for {fieldName}")
+        logging.info("setFillcolor()")
+        logging.info(f"inbound color and weight is {currentColor} {currentWeight}")
+        logging.info(f"Getting color for {fieldName}")
         color = ""
         weight = 0
         colormap = self.fields[fieldName]["colorMap"]
-        for item in colormap.keys():
-            if re.match(fr"{item}", value_in):
-                color = self.fields[fieldName]["colorMap"].get(item)
+        for pattern in colormap.keys():
+            if re.match(fr"{pattern}", value_in):
+                logging.info(f"match on {pattern}")
+                color = self.fields[fieldName]["colorMap"].get(pattern)
+                logging.info(f"color is {color}")
                 weight = self.fields[fieldName].get("colorWeight")
+                logging.info(f"weight is {weight}")
             if color and (weight > currentWeight):
-                logging.debug(f"color and weight are now {color} {weight}")
+                logging.info(f"color and weight are now {color} {weight}")
                 return (color, weight)
         else:
-            logging.debug(f"color and weight remain {currentColor} {weight}")
+            logging.info(f"color and weight remain {currentColor} {weight}")
             return (currentColor, currentWeight)
 
     def merge(self):
