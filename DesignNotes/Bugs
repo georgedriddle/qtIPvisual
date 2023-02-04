@@ -1,2 +1,3 @@
 28 JAN 2023
-    Color rules broken again. Colors if any field has a value
+    After adding a field nothing clears out after the add, have to reload and it works again.
+    If you add fields, if messes up if did not do new or load first.

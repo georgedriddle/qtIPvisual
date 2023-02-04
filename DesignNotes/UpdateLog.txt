@@ -16,4 +16,5 @@
 | File name updates with savAS                                | 1/11/22  |
 | Added new Button                                            | 1/17/22  |
 | can now add user fields in GUI                              | 12/11/22 |
+| Fixed coloring, regex cant be .*, moved to \w               | 1/30/23  |
 |                                                             |          |

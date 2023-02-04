@@ -13,7 +13,6 @@ from PyQt6.QtGui import (
     QRegularExpressionValidator,
     QPainter,
 )
-from gui.settings import Ui_frmSettings
 import databuilder
 
 logging.basicConfig(level=logging.INFO)
@@ -53,7 +52,9 @@ class TableModel(QtCore.QAbstractTableModel):
 
 class MainWindow(QtWidgets.QMainWindow):
     matchcidr = QRegularExpression(
-        r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
+        r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}"
+        r"([0-9]|[1-9][0-9]|1[0-9]{2}|"
+        r"2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$"
     )
     cidrRegex = QRegularExpressionValidator(QRegularExpression(matchcidr))
 
@@ -149,6 +150,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.btnGenerate.setMaximumWidth(100)
         self.btnGenerate.clicked.connect(self.generate)
 
+        self.updateIcon = QIcon("icons/block--arrow.png")
+        self.updateBtn = QtWidgets.QPushButton(self.updateIcon, "Update")
+        self.updateBtn.clicked.connect(self.update_networks_data)
+        
         self.openfile = QtWidgets.QLabel("NONE")
         self.setCentralWidget(widget)
         self.setGeometry(600, 100, 400, 200)
@@ -180,6 +185,8 @@ class MainWindow(QtWidgets.QMainWindow):
         netLayout.addWidget(self.labelEnd, 1, 2, Qt.AlignmentFlag.AlignLeft)
         netLayout.addWidget(self.displayEnd, 2, 2, Qt.AlignmentFlag.AlignLeft)
         netLayout.addWidget(self.btnGenerate, 3, 0, 1, 1, Qt.AlignmentFlag.AlignLeft)
+        netLayout.addWidget(self.updateBtn, 4, 0)
+
         net_section.setLayout(netLayout)
 
         layout.addWidget(net_section, 0, 0)
@@ -201,30 +208,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 "show": True,
             }
         }
-        # Need to set up a Model for fields
         self.fields = {}
         self.networks = {}
-        self.ufields = {}
+        self.uFieldsCntrls = {}
 
     def add_user_fields_to_form(self):
         logging.info("add_user_fields_to_form()")
         self.update_user_fields()
-        for key, value in self.ufields.items():
+        for key, value in self.uFieldsCntrls.items():
             self.fieldlayout.addRow(key, value)
-
-        UpdateIcon = QIcon("icons/block--arrow.png")
-        updateBtn = QtWidgets.QPushButton(UpdateIcon, "Update")
-        updateBtn.clicked.connect(self.update_networks_data)
-        self.fieldlayout.addRow(updateBtn)
 
     def update_user_fields(self):
         logging.info("update_user_fields()")
         for fieldname in self.fields.keys():
             if self.fields[fieldname]["controlType"] == "lineEdit":
-                self.ufields[fieldname] = QtWidgets.QLineEdit()
-                self.ufields[fieldname].editingFinished.connect(self.autoUpdate)
+                self.uFieldsCntrls[fieldname] = QtWidgets.QLineEdit()
+                self.uFieldsCntrls[fieldname].editingFinished.connect(self.autoUpdate)
             if self.fields[fieldname]["controlType"] == "checkbox":
-                self.ufields[fieldname] = QtWidgets.QCheckBox()
+                self.uFieldsCntrls[fieldname] = QtWidgets.QCheckBox()
 
     def clear_user_layout(self):
         logging.info("clear_user_layout")
@@ -249,7 +250,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.fields.update(entry)
 
     def find_fields(self):
-        """Run through all the subnet entries and find any fields that are not in the fields section"""
+        """Run through all the subnet entries and find any fields that are not
+           in the fields section"""
         # TO DO: Cache found fields and skip check if already checked.
         logging.info("find_fields()")
         for cidr in self.networks.keys():
@@ -268,19 +270,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if file[0]:
             with open(file[0], "r") as F1:
                 saveData = yaml.load(F1, Loader=yaml.FullLoader)
-                try:
-                    self.fields = saveData["fields"]
-                except:
-                    logging.warning(
-                        f"Did not find Field data in {file[0]} setting to default"
-                    )
-                    self.fields = self.defaultFields
-                try:
-                    self.networks = saveData["data"]
-                except:
-                    logging.warning(f"Did not find networks in {file[0]}")
-                    self.networks = {}
-            self.openfile.setText(file[0])
+                self.fields = saveData["fields"]
+                self.networks = saveData["data"]
+                self.openfile.setText(file[0])
             self.find_fields()
             self.add_user_fields_to_form()
         else:
@@ -294,8 +286,8 @@ class MainWindow(QtWidgets.QMainWindow):
             net = self.cidr.text()
             logging.debug(f"update_networks_data: updating {net}")
             self.networks[net] = {}
-            logging.debug(f"update_networks_data: iterating over form fileds")
-            for fldname, val in self.ufields.items():
+            logging.info("update_networks_data: iterating over form fileds")
+            for fldname, val in self.uFieldsCntrls.items():
                 newvalue = val.text()
                 logging.debug(f"newvalue is {newvalue}")
                 logging.info(f"update_networks_data: {fldname} is {newvalue}")
@@ -319,13 +311,9 @@ class MainWindow(QtWidgets.QMainWindow):
             }
             self.fields[newName] = fieldData
             logging.info(f'self.fields is now {self.fields}')
-            self.ufields[newName] = QtWidgets.QLineEdit()
-            self.clear_user_layout()
-            self.find_fields()
-            self.add_user_fields_to_form()
-            self.update_user_fields()
-            self.generate()
-            self.merge()
+            self.uFieldsCntrls[newName] = QtWidgets.QLineEdit()
+            self.fieldlayout.addRow(newName, self.uFieldsCntrls[newName])
+            self.uFieldsCntrls[newName].editingFinished.connect(self.autoUpdate)
             logging.debug(f"fields[{newName}] is {self.fields[newName]}")
 
     def delete_record(self):
@@ -375,12 +363,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def clearUfields(self):
         logging.info("clearufields()")
-        for key in self.ufields.keys():
-            if type(self.ufields.get(key)) == QtWidgets.QLineEdit:
-                self.ufields[key].setText("")
+        for key in self.uFieldsCntrls.keys():
+            if type(self.uFieldsCntrls.get(key)) == QtWidgets.QLineEdit:
+                self.uFieldsCntrls[key].setText("")
 
             elif type(self.fields.get(key)) == QtWidgets.QCheckBox:
-                self.ufields[key] == Qt.CheckState.Unchecked
+                self.uFieldsCntrls[key] == Qt.CheckState.Unchecked
 
     def show_selection(self):
         logging.info("show_selection()")
@@ -392,20 +380,20 @@ class MainWindow(QtWidgets.QMainWindow):
         logging.debug(f"selected_cidr is {selected_cidr}")
         data = self.networks.get(selected_cidr)
         logging.debug(f"show_selection: Populating user fields with {data}")
-        logging.debug(f"Into these user fields {self.ufields.keys()}")
+        logging.debug(f"Into these user fields {self.uFieldsCntrls.keys()}")
         if data:
             for name in data:
-                if type(self.ufields.get(name)) == QtWidgets.QLineEdit:
+                if type(self.uFieldsCntrls.get(name)) == QtWidgets.QLineEdit:
                     text = data.get(name)
-                    self.ufields[name].setText(text)
+                    self.uFieldsCntrls[name].setText(text)
                 else:
-                    self.ufields[name].setText("")
-                if type(self.ufields.get(name)) == QtWidgets.QCheckBox:
+                    self.uFieldsCntrls[name].setText("")
+                if type(self.uFieldsCntrls.get(name)) == QtWidgets.QCheckBox:
                     val = data.get(name)
-                    if val == True:
-                        self.ufields[name].setCheckState(Qt.CheckState.Checked)
+                    if val:
+                        self.uFieldsCntrls[name].setCheckState(Qt.CheckState.Checked)
                     else:
-                        self.ufields[name].setCheckState(Qt.CheckState.Unchecked)
+                        self.uFieldsCntrls[name].setCheckState(Qt.CheckState.Unchecked)
 
     def setFillcolor(
         self, fieldName: str, value_in: str, currentColor: str, currentWeight: int
@@ -448,7 +436,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             showValue = self.fields[property]["show"]
                             logging.debug(f"show value of {property} is {showValue} ")
                             logging.debug(f" showValue is type {type(showValue)}")
-                            if showValue == True:
+                            if showValue:
                                 cell[property] = value
                                 logging.debug(
                                     f"getting fillcolor for {property} {value}"

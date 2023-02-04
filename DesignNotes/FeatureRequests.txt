@@ -15,4 +15,8 @@ General
     update on table selection via arrow buttons, vice having to click.
     Update table view immedietly upon data field update
 
+<<<<<<< HEAD
 After adding a userfield, updates no longer working.
+=======
+Think about making it all one big data table,
+>>>>>>> dev
