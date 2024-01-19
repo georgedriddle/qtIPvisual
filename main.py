@@ -15,7 +15,7 @@ from PyQt6.QtGui import (
 )
 import databuilder
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -153,8 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateIcon = QIcon("icons/block--arrow.png")
         self.updateBtn = QtWidgets.QPushButton(self.updateIcon, "Update")
         self.updateBtn.clicked.connect(self.update_networks_data)
-        
-        self.openfile = QtWidgets.QLabel("NONE")
+
         self.setCentralWidget(widget)
         self.setGeometry(600, 100, 400, 200)
 
@@ -194,9 +193,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.cidr, 3, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.deleteBtn, 3, 1, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.plusBtn, 3, 2, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.openfile, 1, 4)
         layout.addWidget(fields_section, 4, 0, 1, 3)
-        layout.addWidget(self.table, 4, 4)
+        layout.addWidget(self.table, 4, 3)
 
         widget.setLayout(layout)
 
@@ -211,15 +209,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fields = {}
         self.networks = {}
         self.uFieldsCntrls = {}
+        self.openfile = ""
 
     def add_user_fields_to_form(self):
-        logging.info("add_user_fields_to_form()")
+        logging.debug("add_user_fields_to_form()")
         self.update_user_fields()
         for key, value in self.uFieldsCntrls.items():
             self.fieldlayout.addRow(key, value)
 
     def update_user_fields(self):
-        logging.info("update_user_fields()")
+        logging.debug("update_user_fields()")
         for fieldname in self.fields.keys():
             if self.fields[fieldname]["controlType"] == "lineEdit":
                 self.uFieldsCntrls[fieldname] = QtWidgets.QLineEdit()
@@ -228,7 +227,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.uFieldsCntrls[fieldname] = QtWidgets.QCheckBox()
 
     def clear_user_layout(self):
-        logging.info("clear_user_layout")
+        logging.debug("clear_user_layout")
         rowCount = self.fieldlayout.rowCount()
         for x in range(rowCount - 1, -1, -1):
             self.fieldlayout.removeRow(x)
@@ -237,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Verifies that the field in the data section
         has a coresponding entry in the fields section.
         Adds it to fields as a lineEdit if not there."""
-        logging.info("check_field()")
+        logging.debug("check_field()")
         for fieldname in self.networks.get(cidr).keys():
             if fieldname not in self.fields.keys():
                 entry = {
@@ -251,20 +250,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def find_fields(self):
         """Run through all the subnet entries and find any fields that are not
-           in the fields section"""
+        in the fields section"""
         # TO DO: Cache found fields and skip check if already checked.
-        logging.info("find_fields()")
+        logging.debug("find_fields()")
         for cidr in self.networks.keys():
             self.check_field(cidr)
 
     def new(self):
-        logging.info("new()")
+        logging.debug("new()")
         self.fields = self.defaultFields
         self.add_user_fields_to_form()
 
     def load_save_data(self):
         """1. Loads file into saveData dictionary"""
-        logging.info("load_save_data()")
+        logging.debug("load_save_data()")
         self.clear_user_layout()
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
         if file[0]:
@@ -272,7 +271,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 saveData = yaml.load(F1, Loader=yaml.FullLoader)
                 self.fields = saveData["fields"]
                 self.networks = saveData["data"]
-                self.openfile.setText(file[0])
+                self.openfile = file[0]
+                self.setWindowTitle(f"IP-Visualizer {file[0]}")
             self.find_fields()
             self.add_user_fields_to_form()
         else:
@@ -280,27 +280,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_networks_data(self):
         # TODO Pull key field out of user fields
-        logging.info("update_networks_data()")
+        logging.debug("update_networks_data()")
         # TODO Next line can be improved I think.
         if self.cidr:
             net = self.cidr.text()
-            logging.info(f"update_networks_data: updating {net}")
+            logging.debug(f"update_networks_data: updating {net}")
             self.networks[net] = {}
-            logging.info("update_networks_data: iterating over form fileds")
+            logging.debug("update_networks_data: iterating over form fileds")
             for fldname, val in self.uFieldsCntrls.items():
                 newvalue = val.text()
-                logging.info(f"newvalue is {newvalue}")
-                logging.info(f"update_networks_data: {fldname} is {newvalue}")
+                logging.debug(f"newvalue is {newvalue}")
+                logging.debug(f"update_networks_data: {fldname} is {newvalue}")
                 if self.fields[fldname]["controlType"] == "lineEdit":
                     self.networks[net][fldname] = newvalue
-                    logging.info(f" networks is now: {self.networks}")
+                    logging.debug(f" networks is now: {self.networks}")
                 elif self.fields[fldname]["controlType"] == "checkbox":
                     if val.checkState() == Qt.CheckState.Checked:
                         self.fields[net][fldname] = True
 
     def add_user_field(self):
         """Adds a new user defined field to the form"""
-        logging.info("add_user_fields()")
+        logging.debug("add_user_fields()")
         newName, ok = QtWidgets.QInputDialog.getText(self, "New field name", "Name")
         if newName and ok:
             fieldData = {
@@ -310,14 +310,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 "show": False,
             }
             self.fields[newName] = fieldData
-            logging.info(f'self.fields is now {self.fields}')
+            logging.debug(f"self.fields is now {self.fields}")
             self.uFieldsCntrls[newName] = QtWidgets.QLineEdit()
             self.fieldlayout.addRow(newName, self.uFieldsCntrls[newName])
             self.uFieldsCntrls[newName].editingFinished.connect(self.autoUpdate)
             logging.debug(f"fields[{newName}] is {self.fields[newName]}")
 
     def delete_record(self):
-        logging.info("delete_record()")
+        logging.debug("delete_record()")
         key = self.cidr
         if self.networks.get(key):
             self.networks.pop(key)
@@ -325,14 +325,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def write(self, name):
         with open(name, "w") as F1:
-            self.openfile.setText(name)
+            self.openfile = name
             self.nets = {"data": self.networks}
             yaml.dump(self.nets, F1)
             self.flds = {"fields": self.fields}
             yaml.dump(self.flds, F1)
 
     def autoUpdate(self):
-        logging.info("autoUpdate()")
+        logging.debug("autoUpdate()")
         if self.auto_update:
             self.update_networks_data()
 
@@ -340,13 +340,14 @@ class MainWindow(QtWidgets.QMainWindow):
         fileToSave = QtWidgets.QFileDialog.getSaveFileName(self, "WHERE?")
         if fileToSave[0]:
             self.write(fileToSave[0])
-            self.openfile.setText(fileToSave[0])
+            self.openfile = fileToSave[0]
+            self.windowTitle = "IP VISUAL --{fileToSave[0]}"
 
     def save(self):
-        if self.openfile.text() == "NONE":
+        if not self.openfile:
             self.saveAs()
         else:
-            self.write(self.openfile.text())
+            self.write(self.openfile)
 
     def settings(self):
         print("Cool stuff comming soon")
@@ -362,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.render(painter)
 
     def clearUfields(self):
-        logging.info("clearufields()")
+        logging.debug("clearufields()")
         for key in self.uFieldsCntrls.keys():
             if type(self.uFieldsCntrls.get(key)) == QtWidgets.QLineEdit:
                 self.uFieldsCntrls[key].setText("")
@@ -371,7 +372,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.uFieldsCntrls[key] == Qt.CheckState.Unchecked
 
     def show_selection(self):
-        logging.info("show_selection()")
+        logging.debug("show_selection()")
         self.clearUfields()
         z = self.table.selectedIndexes()[0]
         selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
@@ -399,38 +400,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self, fieldName: str, value_in: str, currentColor: str, currentWeight: int
     ) -> tuple:
         """Updates color and weight values if greater than current"""
-        logging.info("setFillcolor()")
-        logging.info(f"inbound color and weight is {currentColor} {currentWeight}")
-        logging.info(f"Getting color for {fieldName}")
+        logging.debug("setFillcolor()")
+        logging.debug(f"inbound color and weight is {currentColor} {currentWeight}")
+        logging.debug(f"Getting color for {fieldName}")
         color = ""
         weight = 0
         colormap = self.fields[fieldName]["colorMap"]
         for pattern in colormap.keys():
-            if re.match(fr"{pattern}", value_in):
-                logging.info(f"match on {pattern}")
+            if re.match(rf"{pattern}", value_in):
+                logging.debug(f"match on {pattern}")
                 color = self.fields[fieldName]["colorMap"].get(pattern)
-                logging.info(f"color is {color}")
+                logging.debug(f"color is {color}")
                 weight = self.fields[fieldName].get("colorWeight")
-                logging.info(f"weight is {weight}")
+                logging.debug(f"weight is {weight}")
             if color and (weight > currentWeight):
-                logging.info(f"color and weight are now {color} {weight}")
+                logging.debug(f"color and weight are now {color} {weight}")
                 return (color, weight)
         else:
-            logging.info(f"color and weight remain {currentColor} {weight}")
+            logging.debug(f"color and weight remain {currentColor} {weight}")
             return (currentColor, currentWeight)
 
     def merge(self):
-        logging.info("merge()")
+        logging.debug("merge()")
         cidrDetails = None
-        logging.info(f"merge in {self.networks}")
+        logging.debug(f"merge in {self.networks}")
         for row in self.data:
             for cell in row:
                 fillweight = 0
                 if cidr := cell.get("network"):
-                    logging.info(f"MERGE:CIDR value to check is {cidr}")
+                    logging.debug(f"MERGE:CIDR value to check is {cidr}")
                     if cidrDetails := self.networks.get(cidr):
-                        logging.info(f"MERGE: {cidr} is in networks")
-                        logging.info(f"MERGE: cidr details are {cidrDetails}")
+                        logging.debug(f"MERGE: {cidr} is in networks")
+                        logging.debug(f"MERGE: cidr details are {cidrDetails}")
 
                         for property, value in cidrDetails.items():
                             showValue = self.fields[property]["show"]
@@ -450,7 +451,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         logging.debug(f"MERGE: {cidr} is not in networks")
 
     def generate(self):
-        logging.info("generate()")
+        logging.debug("generate()")
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
         net = ip_network(self.displayNetwork.text(), strict=False)

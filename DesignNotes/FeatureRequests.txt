@@ -6,13 +6,13 @@ Coloring
 
 General
     Get user_name for logging (system logon name?)
-    Dirty clean state in file name.
-        Unsaved changes warning upon exit.
+    File name
+        Move it to Window Title
+        Some type of save needed indicator / Unsaved changes warning upon exit.
     Print function
     History logging off all actions taken, updates made. Eventually inlcude some sort of replay or undue option to put back or remove a previous update.
     Auto Save, make it a user selectable option.
     Search
     update on table selection via arrow buttons, vice having to click.
     Update table view immedietly upon data field update
-
-Think about making it all one big data table,
+    Make the Column headers name the subnet column
