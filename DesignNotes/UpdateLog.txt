@@ -17,4 +17,4 @@
 | Added new Button                                            | 1/17/22  |
 | can now add user fields in GUI                              | 12/11/22 |
 | Fixed coloring, regex cant be .*, moved to \w               | 1/30/23  |
-|                                                             |          |
+| Fixed behaviour when adding a new field                     | 2/4/23         |

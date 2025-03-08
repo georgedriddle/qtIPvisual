@@ -1,23 +1,23 @@
-from ipaddress import ip_network
+from ipaddress import IPv4Network
 
 
-def checkCidr(cidr: ip_network, startPrefix: int) -> ip_network:
+def checkCidr(cidr: IPv4Network, startPrefix: int) -> IPv4Network:
     """Checks if the display start is less than the network prefix.
     It will update the network to the start prefix if so. Otherwise
     returns same network back.
     """
     if startPrefix < cidr.prefixlen:
         newnet = str(cidr.network_address)
-        cidr = ip_network(newnet + "/" + str(startPrefix), strict=False)
+        cidr = IPv4Network(newnet + "/" + str(startPrefix), strict=False)
     return cidr
 
 
-def buildDisplayList(cidr: ip_network, startPrefix: int, endPrefix: int):
+def buildDisplayList(cidr: IPv4Network, startPrefix: int, endPrefix: int):
     """Returns a list of list, each being a subnet column"""
     cidr = checkCidr(cidr, startPrefix)
     columnCount = endPrefix - startPrefix + 1
     rowCount = 2 ** (endPrefix - cidr.prefixlen)
-    data = [[{} for c in range(columnCount)] for r in range(rowCount)]
+    data: list = [[{} for c in range(columnCount)] for r in range(rowCount)]
     colNum = 0
 
     for prefix in list(range(startPrefix, endPrefix + 1)):
@@ -35,7 +35,7 @@ def buildDisplayList(cidr: ip_network, startPrefix: int, endPrefix: int):
 
 
 if __name__ == "__main__":
-    network = ip_network("192.168.1.0/24")
+    network = IPv4Network("192.168.1.0/24")
     start = 23
     end = 26
     networks = buildDisplayList(network, start, end)

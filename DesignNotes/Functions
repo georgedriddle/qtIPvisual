@@ -9,13 +9,3 @@ MainWindow
     check_field
     find_fields 
         calls check_field
-
-| load_save_data          | add_user_field     |
-| ----------------------- | ------------------ |
-| clear_user_layout       | clear_user_layout  |
-| find_fields             | find_fields        |
-| add_user_fields_to_form | add_user           |
-|                         | Update_user_fields |
-|                         | generate           |
-|                         | merge              |
-|                         |                    |
