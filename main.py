@@ -1,10 +1,10 @@
 import yaml
 import re
 import logging
-from ipaddress import ip_network
+from ipaddress import IPv4Network
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt, QRegularExpression
-from PyQt6.QtPrintSupport import QPrinter
+from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 from PyQt6.QtGui import (
     QAction,
     QIcon,
@@ -15,7 +15,7 @@ from PyQt6.QtGui import (
 )
 import databuilder
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class TableModel(QtCore.QAbstractTableModel):
@@ -60,6 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
+        widget = QtWidgets.QWidget()
         self.zero32 = QIntValidator(0, 32)
         self.setWindowTitle("IP-Visualizer")
         self.setGeometry(50, 50, 1000, 1200)
@@ -121,7 +122,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.filebtn = QtWidgets.QPushButton("Open File")
         self.filebtn.clicked.connect(self.load_save_data)
-        widget = QtWidgets.QWidget()
+
         self.table = QtWidgets.QTableView()
         self.table.clicked.connect(self.show_selection)
 
@@ -175,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fieldlayout = QtWidgets.QFormLayout()
         fields_section.setLayout(self.fieldlayout)
         layout = QtWidgets.QGridLayout()
+
         net_section = QtWidgets.QWidget(None)
         netLayout = QtWidgets.QGridLayout()
         netLayout.addWidget(self.labelNetwork, 1, 0, Qt.AlignmentFlag.AlignLeft)
@@ -249,9 +251,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.fields.update(entry)
 
     def find_fields(self):
-        """Run through all the subnet entries and find any fields that are not
-        in the fields section"""
-        # TO DO: Cache found fields and skip check if already checked.
+        """Run through all the subnet entries, call check_field() on each entry"""
         logging.debug("find_fields()")
         for cidr in self.networks.keys():
             self.check_field(cidr)
@@ -262,7 +262,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_user_fields_to_form()
 
     def load_save_data(self):
-        """1. Loads file into saveData dictionary"""
+        """Loads file into saveData dictionary"""
         logging.debug("load_save_data()")
         self.clear_user_layout()
         file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
@@ -354,13 +354,15 @@ class MainWindow(QtWidgets.QMainWindow):
         # Page 66 on Freda to create a dialog.
 
     def print(self):
-        self.prn = QPrinter()
-        self.prn.colorMode = QPrinter.ColorMode.Color
-        self.prn.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
-        self.prn.setOutputFileName("test.pdf")
-
-        painter = QPainter(self.prn)
-        self.render(painter)
+        prn = QPrinter(QPrinter.PrinterMode.HighResolution)
+        orig_size = self.size()
+        self.resize(self.sizeHint())
+        printDialog = QPrintDialog(prn, self)
+        if printDialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            painter = QPainter(prn)
+            self.render(painter)
+            painter.end()
+            self.table.resize(orig_size)
 
     def clearUfields(self):
         logging.debug("clearufields()")
@@ -371,30 +373,30 @@ class MainWindow(QtWidgets.QMainWindow):
             elif type(self.fields.get(key)) == QtWidgets.QCheckBox:
                 self.uFieldsCntrls[key] == Qt.CheckState.Unchecked
 
+    def getcellvalue(self):
+        cellValue = self.table.selectedIndexes()[0]
+        selectedDisplay = self.model.data(cellValue, Qt.ItemDataRole.DisplayRole)
+        selected_cidr = selectedDisplay.split()[0]
+        return selected_cidr
+
     def show_selection(self):
         logging.debug("show_selection()")
         self.clearUfields()
-        z = self.table.selectedIndexes()[0]
-        selectedDisplay = self.model.data(z, Qt.ItemDataRole.DisplayRole)
-        selected_cidr = selectedDisplay.split()[0]
-        self.cidr.setText(selected_cidr)
-        logging.debug(f"selected_cidr is {selected_cidr}")
-        data = self.networks.get(selected_cidr)
+        cellValue = self.getcellvalue()
+        self.cidr.setText(cellValue)
+        data = self.networks.get(cellValue, {})
         logging.debug(f"show_selection: Populating user fields with {data}")
         logging.debug(f"Into these user fields {self.uFieldsCntrls.keys()}")
-        if data:
-            for name in data:
-                if type(self.uFieldsCntrls.get(name)) == QtWidgets.QLineEdit:
-                    text = data.get(name)
-                    self.uFieldsCntrls[name].setText(text)
-                else:
-                    self.uFieldsCntrls[name].setText("")
-                if type(self.uFieldsCntrls.get(name)) == QtWidgets.QCheckBox:
-                    val = data.get(name)
-                    if val:
-                        self.uFieldsCntrls[name].setCheckState(Qt.CheckState.Checked)
-                    else:
-                        self.uFieldsCntrls[name].setCheckState(Qt.CheckState.Unchecked)
+        # make data an object, then display the object itself.
+        # how does this work when adding fields to objects?
+        # iterate over object, add filed if missing?
+        for name in data:
+            if type(self.uFieldsCntrls.get(name)) == QtWidgets.QLineEdit:
+                text = data.get(name, "")
+                self.uFieldsCntrls[name].setText(text)
+            if type(self.uFieldsCntrls.get(name)) == QtWidgets.QCheckBox:
+                val = data.get(name, Qt.CheckState.Unchecked)
+                self.uFieldsCntrls[name].setCheckState(val)
 
     def setFillcolor(
         self, fieldName: str, value_in: str, currentColor: str, currentWeight: int
@@ -420,46 +422,35 @@ class MainWindow(QtWidgets.QMainWindow):
             logging.debug(f"color and weight remain {currentColor} {weight}")
             return (currentColor, currentWeight)
 
-    def merge(self):
-        logging.debug("merge()")
-        cidrDetails = None
-        logging.debug(f"merge in {self.networks}")
+    def getCidrDetails(self, cidr, cell) -> dict:
+        return cell.get("network", {})
+
+    def setCellColor(self, property, value, cell):
+        fillweight = 0
+        cell["color"], weight = self.setFillcolor(
+            property, value, cell.get("color"), fillweight
+        )
+
+    def updateCell(self):
         for row in self.data:
             for cell in row:
-                fillweight = 0
-                if cidr := cell.get("network"):
-                    logging.debug(f"MERGE:CIDR value to check is {cidr}")
-                    if cidrDetails := self.networks.get(cidr):
-                        logging.debug(f"MERGE: {cidr} is in networks")
-                        logging.debug(f"MERGE: cidr details are {cidrDetails}")
-
-                        for property, value in cidrDetails.items():
-                            showValue = self.fields[property]["show"]
-                            logging.debug(f"show value of {property} is {showValue} ")
-                            logging.debug(f" showValue is type {type(showValue)}")
-                            if showValue:
-                                cell[property] = value
-                                logging.debug(
-                                    f"getting fillcolor for {property} {value}"
-                                )
-                                cell["color"], weight = self.setFillcolor(
-                                    property, value, cell.get("color"), fillweight
-                                )
-                            else:
-                                logging.debug("Not showing")
-                    else:
-                        logging.debug(f"MERGE: {cidr} is not in networks")
+                cellNetwork = cell.get("network")
+                networkdetails = self.networks.get(cellNetwork, {})
+                for property, value in networkdetails.items():
+                    if self.fields[property].get("show", False):
+                        cell[property] = value
+                    self.setCellColor(property, value, cell)
 
     def generate(self):
         logging.debug("generate()")
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
-        net = ip_network(self.displayNetwork.text(), strict=False)
+        net = IPv4Network(self.displayNetwork.text(), strict=False)
         net = databuilder.checkCidr(net, start)
         columnCount = end - start + 1
         rowCount = 2 ** (end - net.prefixlen)
         self.data = databuilder.buildDisplayList(net, start, end)
-        self.merge()
+        self.updateCell()
         # Looking into here for potential issue with updates not working.
         self.model = TableModel(self.data)
         self.table.setModel(self.model)

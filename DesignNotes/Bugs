@@ -1,3 +1,4 @@
 28 JAN 2023
     After adding a field nothing clears out after the add, have to reload and it works again.
     If you add fields, if messes up if did not do new or load first.
+    Selecting new on an existing form, does not clear out the old stuff. but appends another name field.

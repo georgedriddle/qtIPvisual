@@ -1,3 +1,23 @@
-netLayout
-GRID
+class MainWindow
+    Toolbar widget
+    menubar (nothing added)
+    statusbar 
+    table (table view)
+
+    fields_section (qwidget)
+        fieldlayout(form)
+
+net_section (Where you put in network, start and end values & generate & update buttons)
+    layout = netLayout (grid)
+
+
+layout (grid)
+    netsection (0,0)
+    cidr label and entry box, delte and add field buttons
+    fields section(4,0)
+    table(4,3)
+
+widget (Top level window widget)
+    layout = layout
+
     fields=form
