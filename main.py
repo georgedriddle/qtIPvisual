@@ -15,6 +15,7 @@ from PyQt6.QtGui import (
     QPainter,
 )
 import databuilder
+import dbops
 
 logging.basicConfig(level=logging.INFO)
 
@@ -77,20 +78,46 @@ class SubnetView(QtWidgets.QWidget):
         self.auto_update = True
 
         self.fields = {}
-        self.networks = {}
+        # Networks are now global - stored in parent_window.networks
         self.uFieldsCntrls = {}
         self.data = []
         self.model = None
         self.compiled_patterns = {}  # Cache for compiled regex patterns
         self.span_info = []  # Cache for span positions
+        self.view_mode = "table"  # "table" or "list"
 
         self.setup_ui()
+
+    @property
+    def networks(self):
+        """Access global networks dictionary from parent window"""
+        return self.parent_window.networks
 
     def setup_ui(self):
         """Setup the UI components for this subnet view"""
         # Table view
         self.table = QtWidgets.QTableView()
         self.table.clicked.connect(self.show_selection)
+
+        # Network list table for showing all subnets with details
+        self.network_list_table = QtWidgets.QTableWidget()
+        self.network_list_table.setSelectionBehavior(
+            QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self.network_list_table.setSelectionMode(
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self.network_list_table.cellDoubleClicked.connect(
+            self.subnet_selected_from_table
+        )
+        self.network_list_table.setSortingEnabled(True)
+        self.network_list_table.setAlternatingRowColors(True)
+        self.network_list_table.hide()  # Hidden by default
+
+        # Stacked widget to switch between views
+        self.view_stack = QtWidgets.QStackedWidget()
+        self.view_stack.addWidget(self.table)  # Index 0
+        self.view_stack.addWidget(self.network_list_table)  # Index 1
 
         # Network Configuration Group
         network_group = QtWidgets.QGroupBox("Network Configuration")
@@ -116,13 +143,17 @@ class SubnetView(QtWidgets.QWidget):
         self.btnGenerate = QtWidgets.QPushButton("Generate")
         self.btnGenerate.clicked.connect(self.generate)
 
+        self.btnToggleView = QtWidgets.QPushButton("Show List View")
+        self.btnToggleView.clicked.connect(self.toggle_view_mode)
+
         network_layout.addWidget(self.labelNetwork, 0, 0)
         network_layout.addWidget(self.displayNetwork, 0, 1, 1, 2)
         network_layout.addWidget(self.labelStart, 1, 0)
         network_layout.addWidget(self.displayStart, 1, 1)
         network_layout.addWidget(self.labelEnd, 1, 2)
         network_layout.addWidget(self.displayEnd, 1, 3)
-        network_layout.addWidget(self.btnGenerate, 2, 0, 1, 4)
+        network_layout.addWidget(self.btnGenerate, 2, 0, 1, 2)
+        network_layout.addWidget(self.btnToggleView, 2, 2, 1, 2)
         network_group.setLayout(network_layout)
 
         # Selected Subnet Group
@@ -175,7 +206,7 @@ class SubnetView(QtWidgets.QWidget):
         # Main layout - simple horizontal split
         main_layout = QtWidgets.QHBoxLayout()
         main_layout.addWidget(left_panel)
-        main_layout.addWidget(self.table, 1)  # Table gets stretch factor
+        main_layout.addWidget(self.view_stack, 1)  # View stack gets stretch factor
 
         self.setLayout(main_layout)
 
@@ -357,6 +388,129 @@ class SubnetView(QtWidgets.QWidget):
                                 cell[property] = value
                             self.setCellColor(property, value, cell)
 
+    def toggle_view_mode(self):
+        """Toggle between table view and list view"""
+        if self.view_mode == "table":
+            # Switch to list view
+            self.view_mode = "list"
+            self.populate_list_view()
+            self.view_stack.setCurrentIndex(1)
+            self.btnToggleView.setText("Show Table View")
+        else:
+            # Switch to table view
+            self.view_mode = "table"
+            self.view_stack.setCurrentIndex(0)
+            self.btnToggleView.setText("Show List View")
+
+    def populate_list_view(self):
+        """Populate network list table with ALL subnets and key fields"""
+        self.network_list_table.clear()
+        self.network_list_table.setSortingEnabled(False)  # Disable while populating
+
+        # Use global networks
+        if not self.networks:
+            self.network_list_table.setRowCount(1)
+            self.network_list_table.setColumnCount(1)
+            self.network_list_table.setHorizontalHeaderLabels(["Status"])
+            self.network_list_table.setItem(
+                0, 0, QtWidgets.QTableWidgetItem("No subnets defined")
+            )
+            return
+
+        # Determine columns to show - CIDR plus common fields
+        common_fields = ["Name", "Location", "Department", "Status", "Owner", "VLAN"]
+        available_fields = []
+
+        # Check which common fields exist in the networks
+        for field in common_fields:
+            for network_data in self.networks.values():
+                if field in network_data:
+                    available_fields.append(field)
+                    break
+
+        # Setup columns
+        columns = ["CIDR"] + available_fields
+        self.network_list_table.setColumnCount(len(columns))
+        self.network_list_table.setHorizontalHeaderLabels(columns)
+
+        # Sort networks by CIDR
+        try:
+            sorted_networks = sorted(
+                self.networks.keys(), key=lambda x: IPv4Network(x, strict=False)
+            )
+        except Exception as e:
+            logging.error(f"Error sorting networks: {e}")
+            sorted_networks = list(self.networks.keys())
+
+        # Populate table
+        self.network_list_table.setRowCount(len(sorted_networks))
+
+        for row, cidr in enumerate(sorted_networks):
+            # CIDR column
+            cidr_item = QtWidgets.QTableWidgetItem(cidr)
+            self.network_list_table.setItem(row, 0, cidr_item)
+
+            # Field columns
+            network_data = self.networks.get(cidr, {})
+            for col, field_name in enumerate(available_fields, start=1):
+                value = network_data.get(field_name, "")
+                item = QtWidgets.QTableWidgetItem(str(value))
+                self.network_list_table.setItem(row, col, item)
+
+        # Auto-resize columns to content
+        self.network_list_table.resizeColumnsToContents()
+        self.network_list_table.setSortingEnabled(True)  # Re-enable sorting
+
+    def subnet_selected_from_table(self, row, column):
+        """Handle subnet selection from network list table"""
+        # Get CIDR from first column
+        cidr_item = self.network_list_table.item(row, 0)
+        if not cidr_item:
+            return
+
+        cidr_text = cidr_item.text()
+
+        if cidr_text == "No subnets defined":
+            return
+
+        try:
+            # Parse the selected CIDR
+            network = IPv4Network(cidr_text, strict=False)
+            prefix = network.prefixlen
+
+            # Ensure this tab has all necessary fields from global networks
+            self.find_fields()
+            self.clear_user_layout()
+            self.add_user_fields_to_form()
+            self.compile_field_patterns()
+
+            # Set network and prefix values on current view
+            self.displayNetwork.setText(str(network))
+            self.displayStart.setText(str(prefix))
+            self.displayEnd.setText(str(prefix))
+
+            # Update tab name from network Name field if present
+            network_data = self.networks.get(cidr_text, {})
+            if "Name" in network_data and network_data["Name"]:
+                current_tab_index = self.parent_window.tabWidget.indexOf(self)
+                self.parent_window.tabWidget.setTabText(
+                    current_tab_index, network_data["Name"]
+                )
+
+            # Switch to table view
+            self.view_mode = "table"
+            self.view_stack.setCurrentIndex(0)
+            self.btnToggleView.setText("Show List View")
+
+            # Generate the table for this subnet
+            self.generate()
+
+        except Exception as e:
+            logging.error(f"Error selecting subnet: {e}")
+            QtWidgets.QMessageBox.warning(
+                self, "Selection Error", f"Failed to select subnet: {e}"
+            )
+
     def generate(self):
         logging.debug("generate()")
         start = int(self.displayStart.text())
@@ -381,19 +535,19 @@ class SubnetView(QtWidgets.QWidget):
         for row, col, span in self.span_info:
             self.table.setSpan(row, col, span, 1)
 
-    def load_data(self, fields, networks):
-        """Load field and network data into this view"""
+    def load_data(self, fields):
+        """Load field configuration into this view"""
         self.clear_user_layout()
-        self.fields = fields
-        self.networks = networks
+        # Use deepcopy to ensure each tab has independent field config
+        self.fields = copy.deepcopy(fields)
         self.find_fields()
         self.add_user_fields_to_form()
         # Compile patterns after loading for performance
         self.compile_field_patterns()
 
     def get_data(self):
-        """Return the current fields and networks data"""
-        return {"fields": self.fields, "networks": self.networks}
+        """Return the current field configuration"""
+        return {"fields": self.fields}
 
 
 class FieldColorSettingsDialog(QtWidgets.QDialog):
@@ -605,6 +759,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setGeometry(50, 50, 1000, 1200)
         self.openfile = ""
         self.autoSave = True
+        self.backend_type = "json"  # "json" or "access"
+        self.db_connection = None
+        self.networks = {}  # Global networks dictionary shared across all tabs
 
         # Create central widget and tab widget
         central_widget = QtWidgets.QWidget()
@@ -613,6 +770,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tabWidget = QtWidgets.QTabWidget()
         self.tabWidget.setTabsClosable(True)
         self.tabWidget.tabCloseRequested.connect(self.close_tab)
+
+        # Enable context menu on tab bar for renaming
+        self.tabWidget.tabBar().setContextMenuPolicy(
+            Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self.tabWidget.tabBar().customContextMenuRequested.connect(
+            self.show_tab_context_menu
+        )
 
         # Setup toolbar
         toolbar = QtWidgets.QToolBar("Tool Bar Title")
@@ -734,16 +899,57 @@ class MainWindow(QtWidgets.QMainWindow):
                 self, "Cannot Close", "Cannot close the last tab!"
             )
 
+    def show_tab_context_menu(self, position):
+        """Show context menu for tab renaming"""
+        tab_index = self.tabWidget.tabBar().tabAt(position)
+        if tab_index >= 0:
+            menu = QtWidgets.QMenu()
+            rename_action = menu.addAction("Rename Tab")
+            action = menu.exec(self.tabWidget.tabBar().mapToGlobal(position))
+
+            if action == rename_action:
+                self.rename_tab(tab_index)
+
+    def rename_tab(self, index):
+        """Rename a tab at the given index"""
+        current_name = self.tabWidget.tabText(index)
+        new_name, ok = QtWidgets.QInputDialog.getText(
+            self, "Rename Tab", "Enter new tab name:", text=current_name
+        )
+
+        if ok and new_name:
+            self.tabWidget.setTabText(index, new_name)
+
     def get_current_view(self):
         """Get the currently active SubnetView"""
         return self.tabWidget.currentWidget()
 
     def load_save_data(self):
-        """Loads file into saveData dictionary"""
+        """Loads file from JSON or Access database"""
         logging.debug("load_save_data()")
-        file = QtWidgets.QFileDialog.getOpenFileName(self, "Choose file")
-        if file[0]:
-            with open(file[0], "r") as F1:
+
+        # File dialog with filter for both types
+        file, selected_filter = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Choose file",
+            "",
+            "All Supported (*.yaml *.yml *.accdb *.mdb);;YAML Files (*.yaml *.yml);;Access Database (*.accdb *.mdb)",
+        )
+
+        if not file:
+            self.statusBar().showMessage("Load cancelled")
+            return
+
+        # Determine backend type from extension
+        if file.lower().endswith((".accdb", ".mdb")):
+            self._load_from_access(file)
+        else:
+            self._load_from_yaml(file)
+
+    def _load_from_yaml(self, filepath):
+        """Load data from YAML file"""
+        try:
+            with open(filepath, "r") as F1:
                 saveData = yaml.load(F1, Loader=yaml.FullLoader)
 
                 # Check if it's multi-tab format or legacy single view
@@ -753,50 +959,180 @@ class MainWindow(QtWidgets.QMainWindow):
                     while self.tabWidget.count() > 0:
                         self.tabWidget.removeTab(0)
 
-                    # Load each tab
+                    # Merge all networks from all tabs into global networks
+                    self.networks = {}
+                    for tab_data in saveData["tabs"]:
+                        tab_networks = tab_data.get("networks", {})
+                        self.networks.update(tab_networks)
+
+                    # Load each tab with its field configuration
                     for tab_data in saveData["tabs"]:
                         subnet_view = SubnetView(self, tab_data.get("name", "Subnet"))
-                        subnet_view.load_data(tab_data["fields"], tab_data["networks"])
+                        subnet_view.load_data(tab_data["fields"])
                         tab_name = tab_data.get("name", "Subnet")
                         self.tabWidget.addTab(subnet_view, tab_name)
                 else:
                     # Legacy single view format
+                    self.networks = saveData.get("data", {})
                     current_view = self.get_current_view()
                     if current_view:
-                        current_view.load_data(saveData["fields"], saveData["data"])
+                        current_view.load_data(saveData["fields"])
 
-                self.openfile = file[0]
-                self.setWindowTitle(f"IP-Visualizer {file[0]}")
-        else:
-            self.statusBar().showMessage("Failed to Load File")
+                self.openfile = filepath
+                self.backend_type = "json"
+                self.setWindowTitle(f"IP-Visualizer {filepath}")
+                self.statusBar().showMessage(f"Loaded from YAML: {filepath}")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Load Error", f"Failed to load YAML file:\n{e}"
+            )
+
+    def _load_from_access(self, filepath):
+        """Load data from MS Access database"""
+        try:
+            # Check if Access driver is available
+            available, msg = dbops.is_access_available()
+            if not available:
+                QtWidgets.QMessageBox.critical(self, "Access Driver Not Found", msg)
+                return
+
+            # Load from database
+            db = dbops.AccessDatabase(filepath)
+            if not db.connect():
+                QtWidgets.QMessageBox.critical(
+                    self, "Connection Error", "Failed to connect to Access database"
+                )
+                return
+
+            db.create_tables()  # Ensure tables exist
+            tabs_data = db.load_data()
+            db.close()
+
+            if tabs_data is None:
+                QtWidgets.QMessageBox.critical(
+                    self, "Load Error", "Failed to load data from database"
+                )
+                return
+
+            # Clear existing tabs
+            while self.tabWidget.count() > 0:
+                self.tabWidget.removeTab(0)
+
+            # Merge all networks from all tabs into global networks
+            self.networks = {}
+            if tabs_data:
+                for tab_data in tabs_data:
+                    tab_networks = tab_data.get("networks", {})
+                    self.networks.update(tab_networks)
+
+                # Load tabs with field configurations
+                for tab_data in tabs_data:
+                    subnet_view = SubnetView(self, tab_data.get("name", "Subnet"))
+                    subnet_view.load_data(tab_data["fields"])
+                    tab_name = tab_data.get("name", "Subnet")
+                    self.tabWidget.addTab(subnet_view, tab_name)
+            else:
+                # Empty database, create default tab
+                self.new_tab()
+
+            self.openfile = filepath
+            self.backend_type = "access"
+            self.setWindowTitle(f"IP-Visualizer [DB] {filepath}")
+            self.statusBar().showMessage(f"Loaded from Access DB: {filepath}")
+
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Load Error", f"Failed to load Access database:\n{e}"
+            )
 
     def write(self, name):
-        """Save all tabs to file"""
-        with open(name, "w") as F1:
-            self.openfile = name
-            tabs_data = []
+        """Save all tabs to file (JSON or Access)"""
+        # Collect tab data - each tab saves the same global networks
+        tabs_data = []
+        for i in range(self.tabWidget.count()):
+            subnet_view = self.tabWidget.widget(i)
+            tab_name = self.tabWidget.tabText(i)
+            view_data = subnet_view.get_data()
+            tabs_data.append(
+                {
+                    "name": tab_name,
+                    "fields": view_data["fields"],
+                    "networks": self.networks,  # Global networks
+                }
+            )
 
-            for i in range(self.tabWidget.count()):
-                subnet_view = self.tabWidget.widget(i)
-                tab_name = self.tabWidget.tabText(i)
-                view_data = subnet_view.get_data()
-                tabs_data.append(
-                    {
-                        "name": tab_name,
-                        "fields": view_data["fields"],
-                        "networks": view_data["networks"],
-                    }
+        # Determine backend from extension
+        if name.lower().endswith((".accdb", ".mdb")):
+            self._write_to_access(name, tabs_data)
+        else:
+            self._write_to_yaml(name, tabs_data)
+
+    def _write_to_yaml(self, filepath, tabs_data):
+        """Write data to YAML file"""
+        try:
+            with open(filepath, "w") as F1:
+                save_data = {"tabs": tabs_data}
+                yaml.dump(save_data, F1)
+            self.openfile = filepath
+            self.backend_type = "json"
+            self.statusBar().showMessage(f"Saved to YAML: {filepath}")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Save Error", f"Failed to save YAML file:\n{e}"
+            )
+
+    def _write_to_access(self, filepath, tabs_data):
+        """Write data to MS Access database"""
+        try:
+            # Check if Access driver is available
+            available, msg = dbops.is_access_available()
+            if not available:
+                QtWidgets.QMessageBox.critical(self, "Access Driver Not Found", msg)
+                return
+
+            # Create database if it doesn't exist
+            import os
+
+            if not os.path.exists(filepath):
+                if not dbops.create_new_database(filepath):
+                    QtWidgets.QMessageBox.critical(
+                        self, "Create Error", "Failed to create new Access database"
+                    )
+                    return
+
+            # Save to database
+            db = dbops.AccessDatabase(filepath)
+            if not db.connect():
+                QtWidgets.QMessageBox.critical(
+                    self, "Connection Error", "Failed to connect to Access database"
+                )
+                return
+
+            db.create_tables()  # Ensure tables exist
+            if db.save_data(tabs_data):
+                self.openfile = filepath
+                self.backend_type = "access"
+                self.statusBar().showMessage(f"Saved to Access DB: {filepath}")
+            else:
+                QtWidgets.QMessageBox.critical(
+                    self, "Save Error", "Failed to save to database"
                 )
 
-            save_data = {"tabs": tabs_data}
-            yaml.dump(save_data, F1)
+            db.close()
+
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Save Error", f"Failed to save Access database:\n{e}"
+            )
 
     def saveAs(self):
-        fileToSave = QtWidgets.QFileDialog.getSaveFileName(self, "WHERE?")
-        if fileToSave[0]:
-            self.write(fileToSave[0])
-            self.openfile = fileToSave[0]
-            self.setWindowTitle(f"IP-Visualizer {fileToSave[0]}")
+        fileToSave, selected_filter = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Save As", "", "YAML Files (*.yaml);;Access Database (*.accdb)"
+        )
+        if fileToSave:
+            self.write(fileToSave)
+            self.openfile = fileToSave
+            self.setWindowTitle(f"IP-Visualizer {fileToSave}")
 
     def save(self):
         if not self.openfile:

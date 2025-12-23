@@ -1,0 +1,18 @@
+tabs:
+- fields:
+    Name:
+      colorMap:
+        \w: green
+      colorWeight: 1
+      controlType: lineEdit
+      show: true
+  name: Subnet 1
+  networks:
+    192.168.1.0/24:
+      Name: Group
+    192.168.1.0/27:
+      Name: s1
+    192.168.1.32/27:
+      Name: s2
+    192.168.1.64/27:
+      Name: s3
