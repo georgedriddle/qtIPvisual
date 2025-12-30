@@ -1167,8 +1167,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Setup printer for Letter size (8.5 x 11 inches)
         prn = QPrinter(QPrinter.PrinterMode.HighResolution)
-        prn.setPageSize(QPrinter.PageSize.Letter)
-        prn.setPageOrientation(QPrinter.PageOrientation.Landscape)
+        from PyQt6.QtGui import QPageSize
+
+        prn.setPageSize(QPageSize(QPageSize.PageSizeId.Letter))
+        from PyQt6.QtGui import QPageLayout
+
+        prn.setPageOrientation(QPageLayout.Orientation.Landscape)
 
         printDialog = QPrintDialog(prn, self)
         if printDialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:

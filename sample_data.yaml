@@ -54,7 +54,7 @@ tabs:
       controlType: lineEdit
       show: true
   name: Corporate Networks
-  networks: &id001
+  networks:
     10.101.128.0/20:
       Department: Finance
       Description: IoT device network
@@ -898,99 +898,3 @@ tabs:
       Region: South
       Status: Staging
       VLAN: '652'
-- fields:
-    Department:
-      colorMap:
-        Engineering|IT: lightyellow
-        Sales|Marketing: lightpink
-      colorWeight: 2
-      controlType: lineEdit
-      show: true
-    Description:
-      colorMap:
-        Database|Storage: lightcyan
-        Management|DMZ: orange
-      colorWeight: 4
-      controlType: lineEdit
-      show: false
-    Location:
-      colorMap:
-        New York|London: lightcoral
-        Paris|Berlin: lightgreen
-        Tokyo|Singapore: lightblue
-      colorWeight: 3
-      controlType: lineEdit
-      show: true
-    Name:
-      colorMap:
-        dev: lightblue
-        prod: lightgreen
-        test: yellow
-      colorWeight: 5
-      controlType: lineEdit
-      show: true
-    Owner:
-      colorMap: {}
-      colorWeight: 1
-      controlType: lineEdit
-      show: true
-    Region:
-      colorMap:
-        East|West: lightgreen
-        North|South: lightblue
-      colorWeight: 3
-      controlType: lineEdit
-      show: true
-    Status:
-      colorMap:
-        Active: lightgreen
-        Inactive|Deprecated: lightgray
-        Production: green
-        Testing: yellow
-      colorWeight: 10
-      controlType: lineEdit
-      show: true
-    VLAN:
-      colorMap: {}
-      colorWeight: 1
-      controlType: lineEdit
-      show: true
-  name: Data Center Networks
-  networks: *id001
-- fields:
-    Department:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-    Description:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-    Location:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-    Name:
-      colorMap:
-        \w: green
-      colorWeight: 1
-      controlType: lineEdit
-      show: true
-    Owner:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-    Region:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-    Status:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-    VLAN:
-      colorMap: {}
-      controlType: lineEdit
-      show: false
-  name: dev-cache-49
-  networks: *id001
