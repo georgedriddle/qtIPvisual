@@ -126,7 +126,8 @@ class SubnetView(QtWidgets.QWidget):
         self.labelNetwork = QtWidgets.QLabel("Network:")
         self.displayNetwork = QtWidgets.QLineEdit("192.168.1.0/24")
         self.displayNetwork.setMaxLength(18)
-        self.displayNetwork.setValidator(self.get_cidr_validator())
+        # Don't set validator here - validate on editingFinished instead
+        self.displayNetwork.editingFinished.connect(self.validate_cidr_input)
 
         self.labelStart = QtWidgets.QLabel("Start Prefix:")
         self.displayStart = QtWidgets.QLineEdit("24")
@@ -222,8 +223,9 @@ class SubnetView(QtWidgets.QWidget):
             if self.fields[fieldname]["controlType"] == "lineEdit":
                 self.uFieldsCntrls[fieldname] = QtWidgets.QLineEdit()
                 self.uFieldsCntrls[fieldname].editingFinished.connect(self.autoUpdate)
-            if self.fields[fieldname]["controlType"] == "checkbox":
+            elif self.fields[fieldname]["controlType"] == "checkbox":
                 self.uFieldsCntrls[fieldname] = QtWidgets.QCheckBox()
+                self.uFieldsCntrls[fieldname].stateChanged.connect(self.autoUpdate)
 
     def clear_user_layout(self):
         logging.debug("clear_user_layout")
@@ -240,6 +242,26 @@ class SubnetView(QtWidgets.QWidget):
                 self.compiled_patterns[field_name] = {
                     pattern: re.compile(pattern) for pattern in colormap.keys()
                 }
+
+    def validate_cidr_input(self):
+        """Validate CIDR input when editing is finished"""
+        cidr_text = self.displayNetwork.text().strip()
+        if not cidr_text:
+            return
+
+        # Check if it matches the CIDR pattern
+        match = self._matchcidr.match(cidr_text)
+        if not match:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Invalid CIDR",
+                f"'{cidr_text}' is not a valid CIDR notation.\n\n"
+                "Format should be: X.X.X.X/Y\n"
+                "Example: 192.168.1.0/24",
+            )
+            # Reset to previous valid value or default
+            self.displayNetwork.setFocus()
+            self.displayNetwork.selectAll()
 
     def check_field(self, cidr: dict):
         logging.debug("check_field()")
@@ -264,37 +286,89 @@ class SubnetView(QtWidgets.QWidget):
         if self.cidr:
             net = self.cidr.text()
             logging.debug(f"update_networks_data: updating {net}")
-            self.networks[net] = {}
+            # Don't replace the entire dictionary - preserve existing data
+            if net not in self.networks:
+                self.networks[net] = {}
             logging.debug("update_networks_data: iterating over form fields")
             for fldname, val in self.uFieldsCntrls.items():
-                newvalue = val.text()
-                logging.debug(f"newvalue is {newvalue}")
-                logging.debug(f"update_networks_data: {fldname} is {newvalue}")
                 if self.fields[fldname]["controlType"] == "lineEdit":
+                    newvalue = val.text()
+                    logging.debug(f"newvalue is {newvalue}")
+                    logging.debug(f"update_networks_data: {fldname} is {newvalue}")
                     self.networks[net][fldname] = newvalue
                     logging.debug(f" networks is now: {self.networks}")
                 elif self.fields[fldname]["controlType"] == "checkbox":
-                    if val.checkState() == Qt.CheckState.Checked:
-                        self.fields[net][fldname] = True
+                    checked = val.isChecked()
+                    logging.debug(
+                        f"update_networks_data: {fldname} checkbox is {checked}"
+                    )
+                    self.networks[net][fldname] = checked
+                    logging.debug(f" networks is now: {self.networks}")
 
     def add_user_field(self):
         logging.debug("add_user_fields()")
-        newName, ok = QtWidgets.QInputDialog.getText(self, "New field name", "Name")
-        if newName and ok:
-            fieldData = {
-                "controlType": "lineEdit",
-                "colorMap": {},
-                "colorWeight": 1,
-                "show": False,
-            }
-            self.fields[newName] = fieldData
-            logging.debug(f"self.fields is now {self.fields}")
-            self.uFieldsCntrls[newName] = QtWidgets.QLineEdit()
-            self.fieldlayout.addRow(newName, self.uFieldsCntrls[newName])
-            self.uFieldsCntrls[newName].editingFinished.connect(self.autoUpdate)
-            logging.debug(f"fields[{newName}] is {self.fields[newName]}")
-            # Recompile patterns when field added
-            self.compile_field_patterns()
+
+        # Create a custom dialog for field creation
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Add New Field")
+        dialog.setMinimumWidth(300)
+
+        layout = QtWidgets.QFormLayout()
+
+        # Field name input
+        name_edit = QtWidgets.QLineEdit()
+        layout.addRow("Field Name:", name_edit)
+
+        # Control type selector
+        control_type_combo = QtWidgets.QComboBox()
+        control_type_combo.addItems(["lineEdit", "checkbox"])
+        layout.addRow("Control Type:", control_type_combo)
+
+        # Dialog buttons
+        button_box = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok
+            | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
+        button_box.accepted.connect(dialog.accept)
+        button_box.rejected.connect(dialog.reject)
+
+        layout.addRow(button_box)
+        dialog.setLayout(layout)
+
+        # Show dialog and get result
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            newName = name_edit.text().strip()
+            control_type = control_type_combo.currentText()
+
+            if newName:
+                # Check if field already exists
+                if newName in self.fields:
+                    QtWidgets.QMessageBox.warning(
+                        self, "Duplicate Field", f"Field '{newName}' already exists."
+                    )
+                    return
+
+                fieldData = {
+                    "controlType": control_type,
+                    "colorMap": {},
+                    "colorWeight": 1,
+                    "show": False,
+                }
+                self.fields[newName] = fieldData
+                logging.debug(f"self.fields is now {self.fields}")
+
+                # Create appropriate control widget
+                if control_type == "checkbox":
+                    self.uFieldsCntrls[newName] = QtWidgets.QCheckBox()
+                    self.uFieldsCntrls[newName].stateChanged.connect(self.autoUpdate)
+                else:
+                    self.uFieldsCntrls[newName] = QtWidgets.QLineEdit()
+                    self.uFieldsCntrls[newName].editingFinished.connect(self.autoUpdate)
+
+                self.fieldlayout.addRow(newName, self.uFieldsCntrls[newName])
+                logging.debug(f"fields[{newName}] is {self.fields[newName]}")
+                # Recompile patterns when field added
+                self.compile_field_patterns()
 
     def delete_record(self):
         logging.debug("delete_record()")
@@ -311,10 +385,10 @@ class SubnetView(QtWidgets.QWidget):
     def clearUfields(self):
         logging.debug("clearufields()")
         for key in self.uFieldsCntrls.keys():
-            if type(self.uFieldsCntrls.get(key)) == QtWidgets.QLineEdit:
+            if isinstance(self.uFieldsCntrls.get(key), QtWidgets.QLineEdit):
                 self.uFieldsCntrls[key].setText("")
-            elif type(self.fields.get(key)) == QtWidgets.QCheckBox:
-                self.uFieldsCntrls[key] == Qt.CheckState.Unchecked
+            elif isinstance(self.uFieldsCntrls.get(key), QtWidgets.QCheckBox):
+                self.uFieldsCntrls[key].setChecked(False)
 
     def getcellvalue(self):
         cellValue = self.table.selectedIndexes()[0]
@@ -324,6 +398,10 @@ class SubnetView(QtWidgets.QWidget):
 
     def show_selection(self):
         logging.debug("show_selection()")
+        # Temporarily disable auto-update to prevent triggering saves while loading
+        old_auto_update = self.auto_update
+        self.auto_update = False
+
         self.clearUfields()
         cellValue = self.getcellvalue()
         self.cidr.setText(cellValue)
@@ -331,12 +409,23 @@ class SubnetView(QtWidgets.QWidget):
         logging.debug(f"show_selection: Populating user fields with {data}")
         logging.debug(f"Into these user fields {self.uFieldsCntrls.keys()}")
         for name in data:
-            if type(self.uFieldsCntrls.get(name)) == QtWidgets.QLineEdit:
+            if isinstance(self.uFieldsCntrls.get(name), QtWidgets.QLineEdit):
                 text = data.get(name, "")
-                self.uFieldsCntrls[name].setText(text)
-            if type(self.uFieldsCntrls.get(name)) == QtWidgets.QCheckBox:
-                val = data.get(name, Qt.CheckState.Unchecked)
-                self.uFieldsCntrls[name].setCheckState(val)
+                self.uFieldsCntrls[name].setText(str(text))
+            elif isinstance(self.uFieldsCntrls.get(name), QtWidgets.QCheckBox):
+                val = data.get(name, False)
+                # Convert to boolean if it's a string or other type
+                if isinstance(val, bool):
+                    self.uFieldsCntrls[name].setChecked(val)
+                elif isinstance(val, str):
+                    self.uFieldsCntrls[name].setChecked(
+                        val.lower() in ["true", "1", "yes"]
+                    )
+                else:
+                    self.uFieldsCntrls[name].setChecked(bool(val))
+
+        # Re-enable auto-update
+        self.auto_update = old_auto_update
 
     def setFillcolor(
         self, fieldName: str, value_in: str, currentColor: str, currentWeight: int
@@ -385,8 +474,17 @@ class SubnetView(QtWidgets.QWidget):
                             # Cache field lookup
                             field_info = self.fields.get(property, {})
                             if field_info.get("show", False):
-                                cell[property] = value
-                            self.setCellColor(property, value, cell)
+                                # Format boolean values for display
+                                if field_info.get("controlType") == "checkbox":
+                                    # Display checkbox as checkmark or blank
+                                    cell[property] = "✓" if value else ""
+                                else:
+                                    cell[property] = value
+                            # Set color based on value (convert bool to string for pattern matching)
+                            display_value = (
+                                str(value) if isinstance(value, bool) else value
+                            )
+                            self.setCellColor(property, display_value, cell)
 
     def toggle_view_mode(self):
         """Toggle between table view and list view"""
@@ -417,16 +515,23 @@ class SubnetView(QtWidgets.QWidget):
             )
             return
 
-        # Determine columns to show - CIDR plus common fields
-        common_fields = ["Name", "Location", "Department", "Status", "Owner", "VLAN"]
+        # Determine columns to show - CIDR plus all defined fields that appear in any network
         available_fields = []
 
-        # Check which common fields exist in the networks
-        for field in common_fields:
+        # First, add all fields that are defined in self.fields
+        for field_name in self.fields.keys():
+            # Check if this field exists in at least one network
             for network_data in self.networks.values():
-                if field in network_data:
-                    available_fields.append(field)
+                if field_name in network_data:
+                    available_fields.append(field_name)
                     break
+
+        # Also check for any fields in networks that aren't in self.fields
+        # (for backwards compatibility)
+        for network_data in self.networks.values():
+            for field_name in network_data.keys():
+                if field_name not in available_fields and field_name not in self.fields:
+                    available_fields.append(field_name)
 
         # Setup columns
         columns = ["CIDR"] + available_fields
@@ -454,7 +559,20 @@ class SubnetView(QtWidgets.QWidget):
             network_data = self.networks.get(cidr, {})
             for col, field_name in enumerate(available_fields, start=1):
                 value = network_data.get(field_name, "")
-                item = QtWidgets.QTableWidgetItem(str(value))
+
+                # Format boolean values for display
+                if field_name in self.fields:
+                    field_info = self.fields.get(field_name, {})
+                    if field_info.get("controlType") == "checkbox" and isinstance(
+                        value, bool
+                    ):
+                        display_value = "✓" if value else ""
+                        item = QtWidgets.QTableWidgetItem(display_value)
+                    else:
+                        item = QtWidgets.QTableWidgetItem(str(value))
+                else:
+                    item = QtWidgets.QTableWidgetItem(str(value))
+
                 self.network_list_table.setItem(row, col, item)
 
         # Auto-resize columns to content
@@ -513,9 +631,27 @@ class SubnetView(QtWidgets.QWidget):
 
     def generate(self):
         logging.debug("generate()")
+
+        # Validate CIDR before generating
+        cidr_text = self.displayNetwork.text().strip()
+        if not cidr_text:
+            QtWidgets.QMessageBox.warning(
+                self, "Missing Network", "Please enter a network in CIDR notation."
+            )
+            return
+
+        try:
+            net = IPv4Network(cidr_text, strict=False)
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Invalid Network",
+                f"Invalid CIDR notation: {cidr_text}\n\nError: {str(e)}",
+            )
+            return
+
         start = int(self.displayStart.text())
         end = int(self.displayEnd.text())
-        net = IPv4Network(self.displayNetwork.text(), strict=False)
         net = databuilder.check_cidr(net, start)
 
         # Get data and span info from optimized builder
@@ -584,10 +720,14 @@ class FieldColorSettingsDialog(QtWidgets.QDialog):
         props_group = QtWidgets.QGroupBox("Field Properties")
         props_layout = QtWidgets.QFormLayout()
 
+        self.control_type_combo = QtWidgets.QComboBox()
+        self.control_type_combo.addItems(["lineEdit", "checkbox"])
+
         self.show_checkbox = QtWidgets.QCheckBox()
         self.weight_spin = QtWidgets.QSpinBox()
         self.weight_spin.setRange(0, 100)
 
+        props_layout.addRow("Control Type:", self.control_type_combo)
         props_layout.addRow("Show in cells:", self.show_checkbox)
         props_layout.addRow("Color weight:", self.weight_spin)
         props_group.setLayout(props_layout)
@@ -648,6 +788,8 @@ class FieldColorSettingsDialog(QtWidgets.QDialog):
         field_data = self.subnet_view.fields[field_name]
 
         # Load properties
+        control_type = field_data.get("controlType", "lineEdit")
+        self.control_type_combo.setCurrentText(control_type)
         self.show_checkbox.setChecked(field_data.get("show", False))
         self.weight_spin.setValue(field_data.get("colorWeight", 1))
 
@@ -731,6 +873,7 @@ class FieldColorSettingsDialog(QtWidgets.QDialog):
         field_data = self.subnet_view.fields[current_field]
 
         # Save properties
+        field_data["controlType"] = self.control_type_combo.currentText()
         field_data["show"] = self.show_checkbox.isChecked()
         field_data["colorWeight"] = self.weight_spin.value()
 
@@ -748,6 +891,11 @@ class FieldColorSettingsDialog(QtWidgets.QDialog):
                     colormap[pattern] = color
 
         field_data["colorMap"] = colormap
+
+        # Update the UI fields in the subnet view if control type changed
+        self.subnet_view.clear_user_layout()
+        self.subnet_view.add_user_fields_to_form()
+        self.subnet_view.compile_field_patterns()
 
         self.accept()
 

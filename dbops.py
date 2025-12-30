@@ -49,7 +49,7 @@ class AccessDatabase:
         Tables:
             - Tabs: Stores tab information
             - Fields: Stores field definitions
-            - Networks: Stores network data
+            - Networks: Stores network data with dynamic columns
             - ColorMappings: Stores color pattern mappings
         """
         try:
@@ -90,7 +90,6 @@ class AccessDatabase:
                         NetworkID AUTOINCREMENT,
                         TabID INTEGER NOT NULL,
                         CIDR TEXT(50) NOT NULL,
-                        FieldValues MEMO,
                         PRIMARY KEY (NetworkID)
                     )
                 """
@@ -114,6 +113,60 @@ class AccessDatabase:
             return True
         except pyodbc.Error as e:
             logging.error(f"Table creation failed: {e}")
+            return False
+
+    def add_field_column(self, field_name: str, control_type: str) -> bool:
+        """Add a column to Networks table for a new field.
+
+        Args:
+            field_name: Name of the field (will be column name)
+            control_type: Type of control (lineEdit, checkbox, etc.)
+
+        Returns:
+            True if column added or already exists, False on error
+        """
+        try:
+            # Check if column already exists
+            columns = [col.column_name for col in self.cursor.columns(table="Networks")]
+
+            if field_name in columns:
+                logging.debug(f"Column {field_name} already exists")
+                return True
+
+            # Determine SQL data type based on control type
+            if control_type == "checkbox":
+                sql_type = "YESNO"
+            else:
+                sql_type = "TEXT(255)"
+
+            # Add column
+            self.cursor.execute(
+                f"ALTER TABLE Networks ADD COLUMN [{field_name}] {sql_type}"
+            )
+            self.conn.commit()
+            logging.info(f"Added column {field_name} ({sql_type}) to Networks table")
+            return True
+        except pyodbc.Error as e:
+            logging.error(f"Failed to add column {field_name}: {e}")
+            return False
+
+    def ensure_all_field_columns(self, fields: Dict[str, Dict[str, Any]]) -> bool:
+        """Ensure all fields have corresponding columns in Networks table.
+
+        Args:
+            fields: Dictionary of field definitions
+
+        Returns:
+            True if all columns exist or were created successfully
+        """
+        try:
+            for field_name, field_data in fields.items():
+                control_type = field_data.get("controlType", "lineEdit")
+                if not self.add_field_column(field_name, control_type):
+                    return False
+            return True
+        except Exception as e:
+            logging.error(f"Error ensuring field columns: {e}")
             return False
 
     def save_data(self, tabs_data: List[Dict[str, Any]]) -> bool:
@@ -140,9 +193,12 @@ class AccessDatabase:
                 self.cursor.execute("SELECT @@IDENTITY")
                 tab_id = self.cursor.fetchone()[0]
 
-                # Insert fields
+                # Insert fields and ensure columns exist
                 fields = tab_data.get("fields", {})
                 field_id_map = {}
+
+                # Ensure all field columns exist in Networks table
+                self.ensure_all_field_columns(fields)
 
                 for field_name, field_data in fields.items():
                     self.cursor.execute(
@@ -170,16 +226,46 @@ class AccessDatabase:
                             (field_id, pattern, color),
                         )
 
-                # Insert networks
+                # Insert networks with dynamic columns
                 networks = tab_data.get("networks", {})
                 for cidr, field_values in networks.items():
-                    # Store field values as JSON
-                    field_values_json = json.dumps(field_values)
-                    self.cursor.execute(
-                        """INSERT INTO Networks
-                        (TabID, CIDR, FieldValues) VALUES (?, ?, ?)""",
-                        (tab_id, cidr, field_values_json),
-                    )
+                    # Build dynamic INSERT statement
+                    columns = ["TabID", "CIDR"]
+                    values = [tab_id, cidr]
+                    placeholders = ["?", "?"]
+
+                    for field_name, field_value in field_values.items():
+                        if field_name in fields:
+                            columns.append(f"[{field_name}]")
+                            placeholders.append("?")
+
+                            # Handle boolean values for checkboxes
+                            if fields[field_name].get("controlType") == "checkbox":
+                                # Convert to boolean
+                                if isinstance(field_value, bool):
+                                    values.append(field_value)
+                                elif isinstance(field_value, str):
+                                    values.append(
+                                        field_value.lower() in ["true", "1", "yes"]
+                                    )
+                                else:
+                                    values.append(bool(field_value))
+                            else:
+                                values.append(
+                                    str(field_value) if field_value is not None else ""
+                                )
+
+                    # Execute dynamic INSERT
+                    sql = f"INSERT INTO Networks ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
+                    self.cursor.execute(sql, values)
+
+            self.conn.commit()
+            logging.info("Data saved to database successfully")
+            return True
+        except pyodbc.Error as e:
+            logging.error(f"Save failed: {e}")
+            self.conn.rollback()
+            return False
 
             self.conn.commit()
             logging.info("Data saved to database successfully")
@@ -234,14 +320,53 @@ class AccessDatabase:
 
                     tab_data["fields"][field_name] = field_data
 
-                # Get networks for this tab
-                self.cursor.execute(
-                    "SELECT CIDR, FieldValues FROM Networks WHERE TabID = ?", (tab_id,)
+                # Get networks for this tab with dynamic columns
+                # First get the column names for Networks table
+                columns = [
+                    col.column_name for col in self.cursor.columns(table="Networks")
+                ]
+
+                # Filter out system columns to get field columns
+                system_columns = ["NetworkID", "TabID", "CIDR"]
+                field_columns = [col for col in columns if col not in system_columns]
+
+                # Build dynamic SELECT query
+                select_columns = ["CIDR"] + [f"[{col}]" for col in field_columns]
+                sql = (
+                    f"SELECT {', '.join(select_columns)} FROM Networks WHERE TabID = ?"
                 )
+
+                self.cursor.execute(sql, (tab_id,))
                 networks = self.cursor.fetchall()
 
-                for cidr, field_values_json in networks:
-                    field_values = json.loads(field_values_json)
+                for row in networks:
+                    cidr = row[0]
+                    field_values = {}
+
+                    # Map column values to field names
+                    for i, field_name in enumerate(field_columns, start=1):
+                        value = row[i]
+
+                        # Handle different field types
+                        if field_name in tab_data["fields"]:
+                            ctrl_type = tab_data["fields"][field_name].get(
+                                "controlType", "lineEdit"
+                            )
+
+                            if ctrl_type == "checkbox":
+                                # Convert to boolean
+                                field_values[field_name] = bool(value)
+                            else:
+                                # Convert to string, handle None
+                                field_values[field_name] = (
+                                    str(value) if value is not None else ""
+                                )
+                        else:
+                            # Unknown field, treat as string
+                            field_values[field_name] = (
+                                str(value) if value is not None else ""
+                            )
+
                     tab_data["networks"][cidr] = field_values
 
                 tabs_data.append(tab_data)
